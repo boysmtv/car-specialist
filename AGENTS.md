@@ -59,7 +59,8 @@ maupun localStorage untuk konten (sesi login tetap di browser, itu wajar).
 ## 6. Auth admin
 
 - Login HANYA akun Supabase (`src/lib/auth.ts`). Tidak ada akun demo — jangan pernah menambahkannya lagi.
-- Sesi login = token acak, expiry 30 menit, divalidasi tiap baca + cek berkala 30 detik. Sidebar menampilkan badge hijau (Supabase) / kuning (Demo).
+- Sesi login = token acak, expiry 30 menit (fixed, tidak sliding), divalidasi tiap baca + cek berkala 30 detik + cek saat `pageshow`/`focus` (lawan tombol back). Sidebar menampilkan badge hijau (Supabase, bisa simpan) / kuning (tanpa sesi Supabase, tidak bisa simpan).
+- Halaman `/admin/login` me-redirect ke dashboard bila sesi masih berlaku.
 - Di Vercel WAJIB login akun Supabase (buat di Auth → Users, centang Auto Confirm) + migrasi 0001→0002→0003.
 
 ## 7. Gotcha yang sudah kejadian (jangan ulangi)
@@ -75,4 +76,5 @@ maupun localStorage untuk konten (sesi login tetap di browser, itu wajar).
 
 1. `npx tsc --noEmit` bersih, `npm run build` sukses, `npm test` hijau.
 2. Restart server lokal, cek halaman diubah + `/api/health`.
-3. `git add -A && git commit && git push` (identitas `boysmtv`).
+3. Untuk perubahan auth/admin: cek alur login → redirect dashboard, back-button → tetap wajib login bila sesi habis.
+4. `git add -A && git commit && git push` (identitas `boysmtv`).
