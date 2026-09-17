@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload } from "lucide-react";
 import type { GalleryItem } from "@/types";
-import { cloudDb, cloudDeleteGallery, cloudListGallery, cloudSaveGallery, fileToPublicUrl } from "@/lib/adminDb";
+import { cloudDb, cloudDeleteGallery, cloudListGallery, cloudSaveGallery, fileToPublicUrl, isLocalHost } from "@/lib/adminDb";
 
 const LS = "demo_gallery";
 const MAX_FILE = 2 * 1024 * 1024;
@@ -92,6 +92,9 @@ export default function GalleryAdmin() {
             const prev = loadLocal();
             prev.unshift(item);
             try { localStorage.setItem(LS, JSON.stringify(prev)); } catch {}
+            if (!isLocalHost()) {
+              throw new Error("Server tidak bisa menyimpan (Vercel). Jalankan migrasi 0001+0002 & login akun Supabase agar permanen.");
+            }
           }
         }
       }

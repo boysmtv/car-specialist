@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import type { Service } from "@/types";
 import { SERVICE_ICONS } from "@/components/marketing/ServiceIcon";
-import { cloudDb, cloudDeleteService, cloudListServices, cloudSaveService } from "@/lib/adminDb";
+import { cloudDb, cloudDeleteService, cloudListServices, cloudSaveService, isLocalHost } from "@/lib/adminDb";
 
 const LS = "demo_services";
 const DEFAULT_PROCESS = "Konsultasi via WhatsApp\nPemeriksaan\nEstimasi\nPengerjaan";
@@ -102,7 +102,7 @@ export default function ServicesAdmin() {
     } catch { return false; }
   }
 
-  async function saveToDemo(item: Service): Promise<boolean> {
+  async function saveToDemo(item: Service): Promise<"server" | "local"> {
     try {
       if (form.editId) {
         await fetch("/api/demo", {
@@ -116,12 +116,12 @@ export default function ServicesAdmin() {
         body: JSON.stringify({ entity: "services", item }),
       });
       if (!r.ok) throw new Error();
-      return true;
+      return "server";
     } catch {
       const prev = loadLocal().filter((x) => x.id !== item.id);
       prev.unshift(item);
       saveLocal(prev);
-      return false;
+      return "local";
     }
   }
 
@@ -150,10 +150,15 @@ export default function ServicesAdmin() {
         toast.error(CLOUD_ERR);
         return;
       }
-    } else if (await saveToDemo(item)) {
-      toast.success(isEdit ? "Layanan diperbarui & tampil di website." : "Layanan ditambahkan & tampil di website.");
     } else {
-      toast.success(isEdit ? "Layanan diperbarui (tersimpan lokal)." : "Layanan ditambahkan (tersimpan lokal).");
+      const where = await saveToDemo(item);
+      if (where === "server") {
+        toast.success(isEdit ? "Layanan diperbarui & tampil di website." : "Layanan ditambahkan & tampil di website.");
+      } else if (isLocalHost()) {
+        toast.success(isEdit ? "Layanan diperbarui (tersimpan lokal)." : "Layanan ditambahkan (tersimpan lokal).");
+      } else {
+        toast.warning("Hanya tersimpan di browser ini — TIDAK tampil publik. Jalankan migrasi 0001+0002 & login akun Supabase.", { duration: 7000 });
+      }
     }
     setForm(EMPTY_FORM);
     setShowForm(false);

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { seedSettings } from "@/data/seed";
 import { toast } from "sonner";
-import { cloudDb, cloudGetSettings, cloudSaveSettings } from "@/lib/adminDb";
+import { cloudDb, cloudGetSettings, cloudSaveSettings, isLocalHost } from "@/lib/adminDb";
 
 export default function SettingsAdmin() {
   const [wa, setWa] = useState(seedSettings.whatsapp);
@@ -58,7 +58,11 @@ export default function SettingsAdmin() {
       if (!r.ok) throw new Error();
       toast.success("Tersimpan & langsung tampil di semua halaman website.");
     } catch {
-      toast.success("Tersimpan lokal (server tidak bisa ditulis).");
+      if (isLocalHost()) {
+        toast.success("Tersimpan lokal (server tidak bisa ditulis).");
+      } else {
+        toast.warning("Hanya tersimpan di browser ini — TIDAK tampil publik. Jalankan migrasi 0001+0002 & login akun Supabase.", { duration: 7000 });
+      }
     }
     try {
       localStorage.setItem("site_whatsapp", wa);

@@ -8,6 +8,17 @@ export function cloudDb() {
   return createClient();
 }
 
+/** true bila dibuka di localhost (mode coba-coba). Di hosting (Vercel),
+ *  simpan lokal TIDAK tampil publik — user wajib tahu. */
+export function isLocalHost(): boolean {
+  try {
+    const h = window.location.hostname;
+    return h === "localhost" || h === "127.0.0.1" || h.endsWith(".local");
+  } catch {
+    return true;
+  }
+}
+
 function mustDb() {
   const sb = createClient();
   if (!sb) throw new Error("NO_CLOUD");

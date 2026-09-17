@@ -10,7 +10,7 @@ import { seedCategories } from "@/data/seed";
 import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
-import { cloudDb, cloudSaveProduct, fileToPublicUrl } from "@/lib/adminDb";
+import { cloudDb, cloudSaveProduct, fileToPublicUrl, isLocalHost } from "@/lib/adminDb";
 
 type F = z.infer<typeof productSchema>;
 
@@ -95,18 +95,26 @@ export default function NewProduct() {
       ...rest,
       price_min,
     };
+    let posted = false;
     try {
       const prev = JSON.parse(localStorage.getItem("demo_products") || "[]");
       prev.unshift(item);
       localStorage.setItem("demo_products", JSON.stringify(prev));
     } catch {}
     try {
-      fetch("/api/demo", {
+      const r = await fetch("/api/demo", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ entity: "products", item }),
-      }).catch(() => {});
+      });
+      posted = r.ok;
     } catch {}
-    toast.success("Produk berhasil dipublish & tampil di katalog.");
+    if (posted) {
+      toast.success("Produk berhasil dipublish & tampil di katalog.");
+    } else if (isLocalHost()) {
+      toast.success("Produk berhasil disimpan (tersimpan lokal).");
+    } else {
+      toast.warning("Hanya tersimpan di browser ini — TIDAK tampil publik. Jalankan migrasi 0001+0002 & login akun Supabase.", { duration: 7000 });
+    }
     router.push("/admin/products");
   }
 
