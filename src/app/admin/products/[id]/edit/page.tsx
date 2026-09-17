@@ -2,25 +2,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { seedCategories } from "@/data/seed";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
-import type { Product } from "@/types";
-import { cloudDb, cloudListProducts, cloudSaveProduct, fileToPublicUrl } from "@/lib/adminDb";
-
-async function fetchDemo(): Promise<Product[]> {
-  try {
-    const r = await fetch("/api/demo?entity=products", { cache: "no-store" });
-    const j = await r.json();
-    return j.success ? j.data : [];
-  } catch { return []; }
-}
-
-function loadLocal(): Product[] {
-  try { return JSON.parse(localStorage.getItem("demo_products") || "[]"); } catch { return []; }
-}
+import type { Category, Product } from "@/types";
+import { cloudListCategories, cloudListProducts, cloudSaveProduct, fileToPublicUrl, refreshPublic } from "@/lib/adminDb";
 
 interface Img { url: string; file?: File }
+const ERR = "Gagal. Pastikan migrasi 0001+0002 sudah dijalankan & login akun Supabase.";
 
 export default function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -28,9 +16,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [item, setItem] = useState<Product | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
-  const [categoryId, setCategoryId] = useState(seedCategories[0].id);
+  const [categoryId, setCategoryId] = useState("");
   const [availability, setAvailability] = useState("AVAILABLE");
   const [priceMode, setPriceMode] = useState("START_FROM");
   const [price, setPrice] = useState("");
@@ -41,26 +30,25 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
 
   useEffect(() => {
     (async () => {
-      let found: Product | undefined;
       try {
-        const cloud = await cloudListProducts();
-        found = cloud.find((x) => x.id === id) || cloud.find((x) => x.slug === id);
-      } catch {}
-      if (!found) {
-        const all = [...(await fetchDemo()), ...loadLocal()];
-        found = all.find((x) => x.id === id) || all.find((x) => x.slug === id);
+        const [cats, prods] = await Promise.all([cloudListCategories(), cloudListProducts()]);
+        setCategories(cats);
+        const found = prods.find((x) => x.id === id) || prods.find((x) => x.slug === id);
+        if (found) {
+          setItem(found);
+          setName(found.name); setBrand(found.brand || "");
+          setCategoryId(found.category_id); setAvailability(found.availability);
+          setPriceMode(found.price_mode === "RANGE" ? "START_FROM" : found.price_mode);
+          setPrice(String(found.price ?? found.price_min ?? ""));
+          setShortDesc(found.short_description || ""); setDesc(found.description || "");
+          setWarranty(found.warranty_text || "");
+          setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => ({ url: i.url })));
+        }
+      } catch {
+        toast.error(ERR);
+      } finally {
+        setLoaded(true);
       }
-      if (found) {
-        setItem(found);
-        setName(found.name); setBrand(found.brand || "");
-        setCategoryId(found.category_id); setAvailability(found.availability);
-        setPriceMode(found.price_mode === "RANGE" ? "START_FROM" : found.price_mode);
-        setPrice(String(found.price ?? found.price_min ?? ""));
-        setShortDesc(found.short_description || ""); setDesc(found.description || "");
-        setWarranty(found.warranty_text || "");
-        setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => ({ url: i.url })));
-      }
-      setLoaded(true);
     })();
   }, [id]);
 
@@ -74,29 +62,11 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     e.target.value = "";
   }
 
-  async function persistDemo(next: Product) {
-    try {
-      await fetch("/api/demo", {
-        method: "DELETE", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity: "products", id: next.id }),
-      }).catch(() => {});
-      const r = await fetch("/api/demo", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity: "products", item: next }),
-      });
-      if (!r.ok) throw new Error();
-    } catch {}
-    try {
-      const prev = loadLocal().filter((x) => x.id !== next.id);
-      prev.unshift(next);
-      localStorage.setItem("demo_products", JSON.stringify(prev));
-    } catch {}
-  }
-
   async function save() {
     if (!item) return;
     if (name.trim().length < 3) { toast.error("Nama minimal 3 karakter"); return; }
     if (images.length === 0) { toast.error("Minimal 1 foto"); return; }
+    if (!categoryId) { toast.error("Pilih kategori"); return; }
     const p = price ? Number(price) : undefined;
     if (priceMode === "FIXED" && !p) { toast.error("Harga wajib untuk mode FIXED"); return; }
     setSaving(true);
@@ -104,52 +74,30 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     try {
       urls = await Promise.all(images.map((im) => (im.file ? fileToPublicUrl(im.file, "products") : im.url)));
     } catch (e) {
-      toast.error((e as Error).message === "CLOUD_UPLOAD_FAIL"
-        ? "Upload gagal. Pastikan migrasi 0002 sudah dijalankan & login akun Supabase."
-        : "Gagal menyiapkan foto.");
+      toast.error((e as Error).message || ERR);
       setSaving(false);
       return;
     }
-    const cat = seedCategories.find((c) => c.id === categoryId);
-    if (cloudDb()) {
-      try {
-        await cloudSaveProduct(
-          {
-            id: item.id, category_id: categoryId, name: name.trim(), slug: item.slug,
-            brand: brand.trim() || null, short_description: shortDesc.trim() || null,
-            description: desc.trim() || null, warranty_text: warranty.trim() || null,
-            price_mode: priceMode, price: priceMode === "FIXED" ? (p ?? null) : null,
-            price_min: priceMode === "START_FROM" ? (p ?? null) : null,
-            price_max: null, availability, active: true, featured: item.featured ?? false,
-          },
-          urls, true,
-        );
-        toast.success("Perubahan disimpan & tampil di katalog.");
-        router.push("/admin/products");
-        return;
-      } catch {
-        toast.error("Gagal menyimpan. Pastikan login akun Supabase.");
-        setSaving(false);
-        return;
-      }
+    try {
+      await cloudSaveProduct(
+        {
+          id: item.id, category_id: categoryId, name: name.trim(), slug: item.slug,
+          brand: brand.trim() || null, short_description: shortDesc.trim() || null,
+          description: desc.trim() || null, warranty_text: warranty.trim() || null,
+          price_mode: priceMode, price: priceMode === "FIXED" ? (p ?? null) : null,
+          price_min: priceMode === "START_FROM" ? (p ?? null) : null,
+          price_max: null, availability, active: true, featured: item.featured ?? false,
+        },
+        urls, true,
+      );
+      refreshPublic(["/", "/produk", `/produk/${item.slug}`]);
+      toast.success("Perubahan disimpan & tampil di katalog.");
+      router.push("/admin/products");
+      return;
+    } catch {
+      toast.error(ERR);
     }
-    const next: Product = {
-      ...item, name: name.trim(),
-      brand: brand.trim() || null, category_id: categoryId,
-      category_name: cat?.name, category_slug: cat?.slug,
-      availability: availability as Product["availability"],
-      price_mode: priceMode as Product["price_mode"],
-      price: priceMode === "FIXED" ? (p ?? null) : null,
-      price_min: priceMode === "START_FROM" ? (p ?? null) : null,
-      price_max: null,
-      short_description: shortDesc.trim() || null,
-      description: desc.trim() || null,
-      warranty_text: warranty.trim() || null,
-      images: urls.map((url, i) => ({ id: `${item.id}-${i}-${Date.now()}`, product_id: item.id, url, alt_text: name.trim(), sort_order: i + 1, is_cover: i === 0 })),
-    };
-    await persistDemo(next);
-    toast.success("Perubahan disimpan & tampil di katalog.");
-    router.push("/admin/products");
+    setSaving(false);
   }
 
   if (!loaded) return <div className="py-16 text-center text-sm text-slate-500">Memuat produk…</div>;
@@ -164,7 +112,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
           <div><label className="label">Nama*</label><input value={name} onChange={(e) => setName(e.target.value)} className="input" /></div>
           <div><label className="label">Brand</label><input value={brand} onChange={(e) => setBrand(e.target.value)} className="input" /></div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Kategori*</label><select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input">{seedCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div><label className="label">Kategori*</label><select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input">{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
             <div><label className="label">Ketersediaan*</label><select value={availability} onChange={(e) => setAvailability(e.target.value)} className="input"><option value="AVAILABLE">Tersedia</option><option value="LOW_STOCK">Stok Terbatas</option><option value="PREORDER">Pre-order</option><option value="OUT_OF_STOCK">Habis</option><option value="CONTACT">Tanya Stok</option></select></div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">

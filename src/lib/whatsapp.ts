@@ -1,8 +1,4 @@
 export function waNumber(): string {
-  if (typeof window !== "undefined") {
-    const s = localStorage.getItem("site_whatsapp");
-    if (s) return s;
-  }
   return process.env.NEXT_PUBLIC_WA_NUMBER || "6282111906994";
 }
 

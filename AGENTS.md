@@ -24,31 +24,27 @@ npm test             # vitest (utils + session)
 npm run start -- -p 3001   # serve build production lokal
 ```
 
-## 3. Arsitektur data (PENTING — 3 lapis)
+## 3. Arsitektur data (PRODUCTION — Supabase saja)
 
-Urutan baca: **Supabase (bila env ada) → file `demo-data.json` → kosong**.
-Tidak ada lagi seed mock untuk produk/layanan/galeri.
+Semua baca/tulis langsung ke Supabase. Tidak ada seed mock, demo file,
+maupun localStorage untuk konten (sesi login tetap di browser, itu wajar).
 
-| Lapis | Lokasi | Kapan dipakai |
-|---|---|---|
-| Supabase | env `NEXT_PUBLIC_SUPABASE_URL` + `..._ANON_KEY` (atau nama double `..._SUPABASE_SUPABASE_*` dari integrasi Vercel — lihat `src/lib/supabase/env.ts`) | Production. Satu-satunya yang permanen di Vercel |
-| demo file | `demo-data.json` (gitignored) via `src/lib/demoStore.ts` + `POST/DELETE /api/demo` | Dev lokal tanpa Supabase |
-| localStorage | `demo_*`, `site_*` di browser | Fallback terakhir, hanya browser sendiri |
-
-- Tulis admin: Supabase dulu (`src/lib/adminDb.ts`), gagal → demo API, gagal → localStorage.
-- Setiap mutasi demo memanggil `revalidatePath` list + detail (anti cache-404).
-- `demo-data.json` JANGAN di-commit. Data user lokal jangan dihapus tanpa izin.
+- Env dibaca via `src/lib/supabase/env.ts` (mendukung nama normal maupun
+  double `..._SUPABASE_SUPABASE_*` dari integrasi Vercel).
+- Tulis admin: `src/lib/adminDb.ts` (CRUD + upload ke bucket `images`).
+- Baca publik: `src/lib/data.ts` (repository server). Kosong = tampil empty state.
+- Setiap mutasi admin memanggil `POST /api/revalidate` untuk list + detail (anti cache-404).
 
 ## 4. Struktur penting
 
 - `src/app/page.tsx` — homepage (hero, layanan, banner home-service, produk, galeri, lokasi, CTA)
 - `src/app/(publik)` — `layanan/`, `produk/`, `galeri/`, `konsultasi/` (form → WA, tanpa DB), `tentang/`, `kontak/`, `sitemap.ts`, `robots.ts`
 - `src/app/admin/` — `login/`, `dashboard/` (kartu + status DB), `products/`, `services/`, `gallery/`, `settings/`
-- `src/app/api/` — `demo/` (CRUD demo+revalidate), `health/` (diagnosa DB, publik), `revalidate/`, `upload/sign/` (legacy)
-- `src/lib/` — `data.ts` (repository server), `adminDb.ts` (CRUD browser), `demoStore.ts` (fs, server-only!), `supabase/*`, `maps.ts` (koordinat `-6.253777,107.140374`), `whatsapp.ts`, `auth.ts` (sesi token 12 jam), `utils.ts`
+- `src/app/api/` — `health/` (diagnosa DB, publik), `revalidate/`
+- `src/lib/` — `data.ts` (repository server), `adminDb.ts` (CRUD browser + upload Storage), `supabase/*`, `maps.ts` (koordinat `-6.253777,107.140374`), `whatsapp.ts`, `auth.ts` (sesi token 30 menit), `utils.ts`
 - `src/components/` — `layout/` (Navbar/Footer/MobileCTA), `marketing/` (cards, LocationSection, ConsultForm), `admin/` (AdminShell + guard)
 - `supabase/migrations/` — `0001` (skema+RLS+seed kategori), `0002` (RLS admin+bucket `images`), `0003` (konten default). Semua idempoten, urut jalan.
-- `src/data/seed.ts` — HANYA kategori, FAQ, settings default. Jangan tambah mock konten.
+- `src/data/seed.ts` — HANYA default info bisnis (nama/alamat/WA) sebagai fallback terakhir. Jangan tambah mock konten.
 
 ## 5. Konvensi
 
@@ -63,7 +59,7 @@ Tidak ada lagi seed mock untuk produk/layanan/galeri.
 ## 6. Auth admin
 
 - Login HANYA akun Supabase (`src/lib/auth.ts`). Tidak ada akun demo — jangan pernah menambahkannya lagi.
-- Sesi demo = token acak, expiry 30 menit, divalidasi tiap baca + cek berkala 30 detik. Sidebar menampilkan badge hijau (Supabase) / kuning (Demo).
+- Sesi login = token acak, expiry 30 menit, divalidasi tiap baca + cek berkala 30 detik. Sidebar menampilkan badge hijau (Supabase) / kuning (Demo).
 - Di Vercel WAJIB login akun Supabase (buat di Auth → Users, centang Auto Confirm) + migrasi 0001→0002→0003.
 
 ## 7. Gotcha yang sudah kejadian (jangan ulangi)
@@ -73,7 +69,7 @@ Tidak ada lagi seed mock untuk produk/layanan/galeri.
 - Env `NEXT_PUBLIC_*` tertanam saat build → redeploy TANPA cache setelah ubah env.
 - Nama env integrasi Vercel bisa double (`...SUPABASE_SUPABASE_URL`) — sudah ditangani `supabase/env.ts`.
 - Kategori pakai UUID tetap (lihat migrasi 0001) — jangan pakai `c-ac` dkk di DB.
-- Jangan commit `demo-data.json`, `.env*`, `node_modules`, `.next`, folder memory lokal.
+- Jangan commit `.env*`, `node_modules`, `.next`, folder memory lokal.
 
 ## 8. Verifikasi sebelum selesai
 

@@ -47,8 +47,8 @@ Login di `/admin/login`, lalu kelola:
 
 - `src/app`: `/`, `/layanan`, `/produk`, `/galeri`, `/promo`, `/konsultasi`, `/tentang`, `/kontak`, `/admin/*`
 - `src/app/api`: `upload/sign` (Cloudinary), `revalidate`
-- `src/lib`: `data.ts` (Supabase-first, seed fallback), `validations` (Zod), `whatsapp.ts`, `maps.ts`, `utils.ts`
-- `supabase/migrations/0001_init.sql`: schema katalog + RLS + seed (tanpa tabel booking)
+- `src/lib`: `data.ts` (repository Supabase), `adminDb.ts` (CRUD + upload Storage), `validations` (Zod), `whatsapp.ts`, `maps.ts`, `utils.ts`
+- `supabase/migrations/`: `0001` (skema+RLS+seed kategori), `0002` (RLS admin+bucket `images`), `0003` (konten default) — semua idempoten, jalan berurutan
 
 ## Lokasi
 

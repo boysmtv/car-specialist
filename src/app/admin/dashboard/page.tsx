@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Package, Wrench, Image as ImageIcon, Settings, ArrowRight, Database, CircleCheck, CircleX } from "lucide-react";
+import { cloudListGallery, cloudListProducts, cloudListServices } from "@/lib/adminDb";
 
 const CARDS = [
   { l: "Produk", d: "Kelola katalog jualan", href: "/admin/products", icon: <Package size={22} />, key: "products" },
@@ -30,12 +31,15 @@ export default function Dashboard() {
         setHealth(h);
       } catch {}
       const out: Record<string, number> = {};
-      for (const key of ["products", "services", "gallery"]) {
-        try {
-          const r = await fetch(`/api/demo?entity=${key}`, { cache: "no-store" });
-          const j = await r.json();
-          out[key] = j.success ? j.data.length : 0;
-        } catch { out[key] = 0; }
+      try {
+        const [p, s, g] = await Promise.all([cloudListProducts(), cloudListServices(), cloudListGallery()]);
+        out.products = p.length;
+        out.services = s.length;
+        out.gallery = g.length;
+      } catch {
+        out.products = 0;
+        out.services = 0;
+        out.gallery = 0;
       }
       setCounts(out);
     })();

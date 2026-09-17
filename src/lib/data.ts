@@ -1,11 +1,9 @@
-import { seedCategories, seedFaq, seedSettings } from "@/data/seed";
-import { getDemoItems, getDemoSettings } from "@/lib/demoStore";
-import { isServerSupabaseConfigured } from "@/lib/supabase/server";
+import { seedSettings } from "@/data/seed";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Category, Faq, GalleryItem, Product, Service, SiteSettings } from "@/types";
 
-// Local overrides (admin demo tanpa DB): disimpan di memory + localStorage di client.
-// Server: selalu coba Supabase dulu, fallback ke seed.
+// PRODUCTION: baca SELALU dari Supabase. Tanpa hasil = kosong.
+// Tidak ada lagi fallback mock/demo/file lokal.
 
 async function trySupabase<T>(fn: (sb: NonNullable<ReturnType<typeof createServerSupabase>>) => Promise<T>, fallback: T): Promise<T> {
   try {
@@ -20,9 +18,8 @@ async function trySupabase<T>(fn: (sb: NonNullable<ReturnType<typeof createServe
 export async function getCategories(): Promise<Category[]> {
   return trySupabase(async (sb) => {
     const { data } = await sb.from("categories").select("*").eq("active", true).order("sort_order");
-    if (!data || data.length === 0) return seedCategories;
-    return data as Category[];
-  }, seedCategories);
+    return (data ?? []) as Category[];
+  }, []);
 }
 
 export async function getServices(): Promise<Service[]> {
@@ -36,10 +33,7 @@ export async function getServices(): Promise<Service[]> {
       process: Array.isArray(s.process) ? s.process : [],
     }));
   }, []);
-  // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
-  const demo = await getDemoItems<Service>("services").catch(() => [] as Service[]);
-  const seen = new Set(base.map((s) => s.id));
-  return [...demo.filter((s) => s.active !== false && !seen.has(s.id)), ...base];
+  return base;
 }
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
@@ -80,14 +74,6 @@ export async function getProducts(query: ProductQuery = {}): Promise<{ items: Pr
 
   let items = fromDb ?? [];
 
-  // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
-  try {
-    const demo = await getDemoItems<Product>("products");
-    const seen = new Set(items.map((x) => x.id));
-    items = [...demo.filter((x) => x && x.active !== false && !seen.has(x.id)), ...items];
-  } catch {}
-
-  // Merge local admin overrides (hanya client; di server abaikan)
   if (q) {
     const s = q.toLowerCase();
     items = items.filter((x) =>
@@ -129,26 +115,21 @@ export async function getRelatedProducts(p: Product, limit = 4): Promise<Product
 }
 
 export async function getGallery(): Promise<GalleryItem[]> {
-  const base = await trySupabase(async (sb) => {
+  return trySupabase(async (sb) => {
     const { data } = await sb.from("gallery").select("*").eq("published", true).order("sort_order");
-    if (!data || data.length === 0) return [] as GalleryItem[];
-    return data as GalleryItem[];
+    return (data ?? []) as GalleryItem[];
   }, []);
-  const demo = await getDemoItems<GalleryItem>("gallery").catch(() => [] as GalleryItem[]);
-  const seen = new Set(base.map((g) => g.id));
-  return [...demo.filter((g) => g.published !== false && !seen.has(g.id)), ...base];
 }
 
 export async function getFaqs(): Promise<Faq[]> {
   return trySupabase(async (sb) => {
     const { data } = await sb.from("faq").select("*").eq("active", true).order("sort_order");
-    if (!data || data.length === 0) return seedFaq;
-    return data as Faq[];
-  }, seedFaq);
+    return (data ?? []) as Faq[];
+  }, []);
 }
 
 export async function getSettings(): Promise<SiteSettings> {
-  const base = await trySupabase(async (sb) => {
+  return trySupabase(async (sb) => {
     const { data } = await sb.from("site_settings").select("*").limit(1).single();
     if (!data) return seedSettings;
     return {
@@ -158,15 +139,6 @@ export async function getSettings(): Promise<SiteSettings> {
       social_links: (data as { social_links?: Record<string, string> }).social_links ?? seedSettings.social_links,
     };
   }, seedSettings);
-  // Tanpa Supabase: perubahan dari /admin/settings (WA, alamat) dipakai semua halaman
-  if (!isServerSupabaseConfigured()) {
-    try {
-      const demo = await getDemoSettings<Partial<SiteSettings>>();
-      const clean = Object.fromEntries(Object.entries(demo).filter(([, v]) => v !== undefined && v !== "")) as Partial<SiteSettings>;
-      if (Object.keys(clean).length > 0) return { ...base, ...clean };
-    } catch {}
-  }
-  return base;
 }
 
 export async function getBrands(): Promise<string[]> {

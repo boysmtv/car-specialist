@@ -5,35 +5,10 @@ import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import type { Service } from "@/types";
 import { SERVICE_ICONS } from "@/components/marketing/ServiceIcon";
-import { cloudDb, cloudDeleteService, cloudListServices, cloudSaveService, isLocalHost, refreshPublic } from "@/lib/adminDb";
+import { cloudDeleteService, cloudListServices, cloudSaveService, refreshPublic } from "@/lib/adminDb";
 
-const LS = "demo_services";
 const DEFAULT_PROCESS = "Konsultasi via WhatsApp\nPemeriksaan\nEstimasi\nPengerjaan";
-
-async function fetchDemo(): Promise<Service[]> {
-  try {
-    const r = await fetch("/api/demo?entity=services", { cache: "no-store" });
-    const j = await r.json();
-    return j.success ? (j.data as Service[]) : [];
-  } catch { return []; }
-}
-
-function loadLocal(): Service[] {
-  try { return JSON.parse(localStorage.getItem(LS) || "[]"); } catch { return []; }
-}
-
-function saveLocal(items: Service[]) {
-  try { localStorage.setItem(LS, JSON.stringify(items)); } catch {}
-}
-
-function dedupe(lists: Service[][]): Service[] {
-  const ids = new Set<string>();
-  const out: Service[] = [];
-  for (const x of lists.flat()) {
-    if (!ids.has(x.id)) { ids.add(x.id); out.push(x); }
-  }
-  return out;
-}
+const ERR = "Gagal. Pastikan migrasi 0001+0002 sudah dijalankan & login akun Supabase.";
 
 const lines = (t: string) => t.split("\n").map((x) => x.trim()).filter(Boolean);
 
@@ -55,26 +30,21 @@ const EMPTY_FORM: FormState = {
   symptoms: "", diagnostics: "", process: DEFAULT_PROCESS, duration: "",
 };
 
-const CLOUD_ERR = "Gagal menyimpan ke database. Pastikan login dengan akun Supabase & migrasi 0002 sudah dijalankan.";
-
 export default function ServicesAdmin() {
   const [items, setItems] = useState<Service[]>([]);
-  const [cloud, setCloud] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [showForm, setShowForm] = useState(false);
   const set = (k: keyof FormState, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   async function refresh() {
-    // Cloud dulu (Supabase = tampil publik permanen), fallback demo lokal
     try {
-      const data = await cloudListServices();
-      setCloud(true);
-      setItems(data);
-      return;
-    } catch {}
-    setCloud(false);
-    const [api, local] = await Promise.all([fetchDemo(), Promise.resolve(loadLocal())]);
-    setItems(dedupe([api, local]));
+      setItems(await cloudListServices());
+    } catch {
+      toast.error(ERR);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { refresh(); }, []);
@@ -95,42 +65,12 @@ export default function ServicesAdmin() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  async function saveToCloud(item: Service, isEdit: boolean): Promise<boolean> {
-    try {
-      await cloudSaveService(item, isEdit);
-      return true;
-    } catch { return false; }
-  }
-
-  async function saveToDemo(item: Service): Promise<"server" | "local"> {
-    try {
-      if (form.editId) {
-        await fetch("/api/demo", {
-          method: "DELETE", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entity: "services", id: item.id }),
-        }).catch(() => {});
-        saveLocal(loadLocal().filter((x) => x.id !== item.id));
-      }
-      const r = await fetch("/api/demo", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entity: "services", item }),
-      });
-      if (!r.ok) throw new Error();
-      return "server";
-    } catch {
-      const prev = loadLocal().filter((x) => x.id !== item.id);
-      prev.unshift(item);
-      saveLocal(prev);
-      return "local";
-    }
-  }
-
   async function save() {
     if (form.name.trim().length < 3) { toast.error("Nama layanan minimal 3 karakter"); return; }
     if (form.short.trim().length < 10) { toast.error("Deskripsi singkat minimal 10 karakter"); return; }
     const isEdit = !!form.editId;
     const item: Service = {
-      id: form.editId || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `demo-svc-${Date.now()}`),
+      id: form.editId || (crypto.randomUUID ? crypto.randomUUID() : `svc-${Date.now()}`),
       name: form.name.trim(),
       slug: isEdit ? form.editSlug : slugify(form.name),
       icon: form.icon,
@@ -143,23 +83,13 @@ export default function ServicesAdmin() {
       price_mode: "CONTACT", featured: false, active: true,
     };
     if (!isEdit && items.some((s) => s.slug === item.slug)) { toast.error("Layanan dengan nama itu sudah ada"); return; }
-    if (cloudDb()) {
-      if (await saveToCloud(item, isEdit)) {
-        refreshPublic(["/", "/layanan", `/layanan/${item.slug}`]);
-        toast.success(isEdit ? "Layanan diperbarui & tampil di website." : "Layanan ditambahkan & tampil di website.");
-      } else {
-        toast.error(CLOUD_ERR);
-        return;
-      }
-    } else {
-      const where = await saveToDemo(item);
-      if (where === "server") {
-        toast.success(isEdit ? "Layanan diperbarui & tampil di website." : "Layanan ditambahkan & tampil di website.");
-      } else if (isLocalHost()) {
-        toast.success(isEdit ? "Layanan diperbarui (tersimpan lokal)." : "Layanan ditambahkan (tersimpan lokal).");
-      } else {
-        toast.warning("Hanya tersimpan di browser ini — TIDAK tampil publik. Jalankan migrasi 0001+0002 & login akun Supabase.", { duration: 7000 });
-      }
+    try {
+      await cloudSaveService(item, isEdit);
+      refreshPublic(["/", "/layanan", `/layanan/${item.slug}`]);
+      toast.success(isEdit ? "Layanan diperbarui." : "Layanan ditambahkan.");
+    } catch {
+      toast.error(ERR);
+      return;
     }
     setForm(EMPTY_FORM);
     setShowForm(false);
@@ -168,23 +98,13 @@ export default function ServicesAdmin() {
 
   async function remove(id: string, name: string) {
     if (!confirm(`Hapus "${name}"? Halaman /layanan-nya ikut hilang.`)) return;
-    if (cloudDb()) {
-      try {
-        await cloudDeleteService(id);
-        toast.success("Layanan dihapus.");
-      } catch {
-        toast.error(CLOUD_ERR);
-        return;
-      }
-    } else {
-      try {
-        await fetch("/api/demo", {
-          method: "DELETE", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ entity: "services", id }),
-        });
-      } catch {}
-      saveLocal(loadLocal().filter((x) => x.id !== id));
+    try {
+      await cloudDeleteService(id);
+      refreshPublic(["/", "/layanan"]);
       toast.success("Layanan dihapus.");
+    } catch {
+      toast.error(ERR);
+      return;
     }
     refresh();
   }
@@ -194,9 +114,7 @@ export default function ServicesAdmin() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Layanan ({items.length})</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {cloud ? "Terhubung database — perubahan tampil permanen." : "Mode lokal — hubungkan Supabase agar permanen."}
-          </p>
+          <p className="mt-0.5 text-sm text-slate-500">Kelola detail lengkap: gejala, pemeriksaan, proses & estimasi waktu.</p>
         </div>
         {!showForm && <button onClick={startAdd} className="btn-gold !py-2 text-xs"><Plus size={15} /> Tambah Layanan</button>}
       </div>
@@ -236,26 +154,29 @@ export default function ServicesAdmin() {
         </div>
       )}
 
-      <div className="mt-4 grid gap-2 lg:grid-cols-2">
-        {items.map((s) => (
-          <div key={s.id} className="card-luxe p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <b className="block truncate">{s.name}</b>
-                <p className="text-xs text-slate-500">/layanan/{s.slug}{s.duration_text ? ` · ${s.duration_text}` : ""}</p>
+      {loading ? (
+        <p className="mt-4 text-sm text-slate-500">Memuat…</p>
+      ) : items.length === 0 ? (
+        <div className="card-luxe mt-4 p-8 text-center text-sm text-slate-500">Belum ada layanan. Tambahkan yang pertama di atas.</div>
+      ) : (
+        <div className="mt-4 grid gap-2 lg:grid-cols-2">
+          {items.map((s) => (
+            <div key={s.id} className="card-luxe p-4">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <b className="block truncate">{s.name}</b>
+                  <p className="text-xs text-slate-500">/layanan/{s.slug}{s.duration_text ? ` · ${s.duration_text}` : ""}</p>
+                </div>
+                <div className="flex shrink-0 gap-1.5">
+                  <button onClick={() => startEdit(s)} title="Edit detail" className="grid h-8 w-8 place-items-center rounded-lg border border-border text-slate-500 transition hover:border-orange-300 hover:text-primary"><Pencil size={15} /></button>
+                  <button onClick={() => remove(s.id, s.name)} title="Hapus" className="grid h-8 w-8 place-items-center rounded-lg border border-border text-slate-500 transition hover:border-red-300 hover:text-red-600"><Trash2 size={15} /></button>
+                </div>
               </div>
-              <div className="flex shrink-0 gap-1.5">
-                <button onClick={() => startEdit(s)} title="Edit detail" className="grid h-8 w-8 place-items-center rounded-lg border border-border text-slate-500 transition hover:border-orange-300 hover:text-primary"><Pencil size={15} /></button>
-                <button onClick={() => remove(s.id, s.name)} title="Hapus" className="grid h-8 w-8 place-items-center rounded-lg border border-border text-slate-500 transition hover:border-red-300 hover:text-red-600"><Trash2 size={15} /></button>
-              </div>
+              <p className="mt-1 line-clamp-2 text-xs text-slate-500">{s.short_description}</p>
+              <p className="mt-1 text-[11px] text-slate-400">{s.symptoms.length} gejala · {s.diagnostics.length} pemeriksaan · {s.process.length} tahap proses</p>
             </div>
-            <p className="mt-1 line-clamp-2 text-xs text-slate-500">{s.short_description}</p>
-            <p className="mt-1 text-[11px] text-slate-400">{s.symptoms.length} gejala · {s.diagnostics.length} pemeriksaan · {s.process.length} tahap proses</p>
-          </div>
-        ))}
-      </div>
-      {items.length === 0 && (
-        <div className="card-luxe mt-3 p-8 text-center text-sm text-slate-500">Belum ada layanan. Tambahkan yang pertama di atas.</div>
+          ))}
+        </div>
       )}
     </div>
   );

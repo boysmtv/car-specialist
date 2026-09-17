@@ -1,8 +1,7 @@
-// Helper CRUD admin via Supabase (browser). Dipakai bila env Supabase terisi
-// DAN admin login dengan akun Supabase. Bila tidak configured → return null
-// dan pemanggil memakai fallback demo-file/localStorage.
+// Helper CRUD admin via Supabase (browser). WAJIB: env Supabase terisi +
+// login akun Supabase. Tidak ada fallback lokal — gagal = error jelas.
 import { createClient } from "@/lib/supabase/client";
-import type { GalleryItem, Product, Service, SiteSettings } from "@/types";
+import type { Category, GalleryItem, Product, Service, SiteSettings } from "@/types";
 
 export function cloudDb() {
   return createClient();
@@ -19,21 +18,17 @@ export function refreshPublic(paths: string[]): void {
   } catch {}
 }
 
-/** true bila dibuka di localhost (mode coba-coba). Di hosting (Vercel),
- *  simpan lokal TIDAK tampil publik — user wajib tahu. */
-export function isLocalHost(): boolean {
-  try {
-    const h = window.location.hostname;
-    return h === "localhost" || h === "127.0.0.1" || h.endsWith(".local");
-  } catch {
-    return true;
-  }
-}
-
 function mustDb() {
   const sb = createClient();
   if (!sb) throw new Error("NO_CLOUD");
   return sb;
+}
+
+export async function cloudListCategories(): Promise<Category[]> {
+  const sb = mustDb();
+  const { data, error } = await sb.from("categories").select("*").eq("active", true).order("sort_order");
+  if (error) throw error;
+  return (data ?? []) as Category[];
 }
 
 function fileName(folder: string, file: File): string {
@@ -42,16 +37,7 @@ function fileName(folder: string, file: File): string {
   return `${folder}/${Date.now()}-${rand}.${ext}`;
 }
 
-export function readAsDataURL(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = () => resolve(String(r.result));
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-}
-
-/** Upload foto ke Supabase Storage → URL publik. Throw bila gagal/tidak configured. */
+/** Upload foto ke Supabase Storage → URL publik. Throw bila gagal. */
 export async function uploadImageFile(file: File, folder: string): Promise<string> {
   const sb = mustDb();
   const path = fileName(folder, file);
@@ -61,17 +47,13 @@ export async function uploadImageFile(file: File, folder: string): Promise<strin
   return data.publicUrl;
 }
 
-/**
- * Upload ke Supabase Storage bila bisa; bila tidak configured → dataURL lokal.
- * Throw CLOUD_UPLOAD_FAIL bila Supabase ada tapi upload gagal (mis. belum
- * migrasi 0002 / login demo) — pemanggil harus menampilkan panduan.
- */
+/** Upload foto (max 2MB). Throw dengan pesan panduan bila gagal. */
 export async function fileToPublicUrl(file: File, folder: string): Promise<string> {
+  if (file.size > 2 * 1024 * 1024) throw new Error("Foto maksimal 2MB.");
   try {
     return await uploadImageFile(file, folder);
   } catch {
-    if (cloudDb()) throw new Error("CLOUD_UPLOAD_FAIL");
-    return readAsDataURL(file);
+    throw new Error("Upload gagal. Pastikan migrasi 0001+0002 sudah dijalankan & login akun Supabase.");
   }
 }
 
