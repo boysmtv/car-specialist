@@ -14,7 +14,7 @@ const DAY_ID: Record<string, string> = {
 export default function LocationSection({ settings }: { settings: SiteSettings }) {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long" });
   return (
-    <section className="container-x py-10 sm:py-12">
+    <section id="lokasi" className="container-x scroll-mt-24 py-10 sm:py-12">
       <div className="card-luxe overflow-hidden">
         <div className="grid lg:grid-cols-2">
           {/* MAP — klik di mana saja untuk buka Google Maps */}

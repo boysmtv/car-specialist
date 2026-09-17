@@ -30,6 +30,13 @@ export default function NewProduct() {
       prev.unshift(item);
       localStorage.setItem("demo_products", JSON.stringify(prev));
     } catch {}
+    // Kirim juga ke server agar langsung tampil di katalog publik
+    try {
+      fetch("/api/demo", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entity: "products", item: { ...item, category_id: v.category_id, category_slug: seedCategories.find((c) => c.id === v.category_id)?.slug, active: true, publication_status: "PUBLISHED" } }),
+      }).catch(() => {});
+    } catch {}
     toast.success("Produk berhasil disimpan.");
     router.push("/admin/products");
   }

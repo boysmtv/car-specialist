@@ -3,6 +3,7 @@ node_modules/
 out/
 .env
 .env.local
+demo-data.json
 *.log
 .DS_Store
 

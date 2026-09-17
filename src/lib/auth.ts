@@ -1,37 +1,100 @@
 "use client";
-// Auth demo: Supabase bila configured, fallback local admin (env demo via API? gunakan default).
-// Untuk MVP lokal: email admin@specialist-ac.local / admin123 disimpan di localStorage session.
+// Session admin: Supabase bila configured, fallback demo lokal.
+// Sesi demo berupa token acak + masa berlaku 12 jam, disimpan di localStorage
+// dan divalidasi (format + expiry) setiap dibaca.
 
 const KEY = "admin_session";
+export const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
-export function getSession(): { email: string } | null {
+export interface AdminSession {
+  email: string;
+  token: string;
+  iat: number;
+  exp: number;
+}
+
+type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
+function defaultStore(): Store | null {
   try {
-    const s = localStorage.getItem(KEY);
-    return s ? JSON.parse(s) : null;
-  } catch { return null; }
+    if (typeof window !== "undefined" && window.localStorage) return window.localStorage;
+  } catch {}
+  return null;
 }
 
-export function setSession(email: string) {
-  localStorage.setItem(KEY, JSON.stringify({ email, at: Date.now() }));
+function randomToken(): string {
+  try {
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    return Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return `t-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+  }
 }
 
-export function clearSession() {
-  localStorage.removeItem(KEY);
+export function createSession(email: string, now = Date.now()): AdminSession {
+  return { email, token: randomToken(), iat: now, exp: now + SESSION_MAX_AGE_MS };
+}
+
+export function getSession(store?: Store | null): AdminSession | null {
+  const s = store ?? defaultStore();
+  if (!s) return null;
+  try {
+    const raw = s.getItem(KEY);
+    if (!raw) return null;
+    const sess = JSON.parse(raw) as Partial<AdminSession>;
+    if (!sess.email || !sess.token || typeof sess.iat !== "number" || typeof sess.exp !== "number") {
+      s.removeItem(KEY);
+      return null;
+    }
+    if (Date.now() > sess.exp) {
+      s.removeItem(KEY); // token kedaluwarsa → paksa login ulang
+      return null;
+    }
+    return sess as AdminSession;
+  } catch {
+    try { s.removeItem(KEY); } catch {}
+    return null;
+  }
+}
+
+export function setSession(email: string, store?: Store | null): AdminSession | null {
+  const s = store ?? defaultStore();
+  if (!s) return null;
+  const sess = createSession(email);
+  try {
+    s.setItem(KEY, JSON.stringify(sess));
+    return sess;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession(store?: Store | null) {
+  try { (store ?? defaultStore())?.removeItem(KEY); } catch {}
+}
+
+export function isAuthenticated(store?: Store | null): boolean {
+  return getSession(store) !== null;
 }
 
 export async function loginAdmin(email: string, password: string): Promise<{ ok: boolean; msg?: string }> {
-  // Coba Supabase dulu
+  // Coba Supabase dulu (token Supabase dikelola SDK-nya sendiri)
   try {
     const { createClient } = await import("@/lib/supabase/client");
     const sb = createClient();
     if (sb) {
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (!error) { setSession(email); return { ok: true }; }
+      if (!error) {
+        setSession(email);
+        return { ok: true };
+      }
     }
   } catch {}
-  // Fallback demo
+  // Fallback demo lokal
   if (email === "admin@specialist-ac.local" && password === "admin123") {
-    setSession(email);
+    const sess = setSession(email);
+    if (!sess) return { ok: false, msg: "Browser memblokir penyimpanan sesi" };
     return { ok: true };
   }
   return { ok: false, msg: "Email/password salah (demo: admin@specialist-ac.local / admin123)" };

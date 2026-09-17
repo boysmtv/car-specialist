@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, MessageCircle, MessagesSquare, MapPin, Clock } from "lucide-react";
+import { Menu, X, MessageCircle, MessagesSquare, MapPin } from "lucide-react";
 import { navLinks } from "@/config/site";
 import { waLink } from "@/lib/whatsapp";
 import { mapsSearchUrl } from "@/lib/maps";
@@ -11,24 +11,6 @@ export default function Navbar({ businessName, whatsapp }: { businessName: strin
   const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40">
-      {/* Topbar soft — alamat & jam, klik langsung ke Maps */}
-      <div className="bg-orange-50 text-orange-950">
-        <div className="container-x flex items-center justify-between gap-2 py-1.5 text-[11px] sm:text-xs">
-          <a
-            href={mapsSearchUrl(siteDefaults.address)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex min-w-0 items-center gap-1.5 truncate font-medium hover:text-primary"
-            title="Klik untuk buka di Google Maps"
-          >
-            <MapPin size={13} className="shrink-0 text-primary" />
-            <span className="truncate">{siteDefaults.addressShort} — klik untuk Maps</span>
-          </a>
-          <span className="hidden shrink-0 items-center gap-1.5 sm:inline-flex">
-            <Clock size={13} className="text-primary" /> Senin–Sabtu · 08:00–17:00
-          </span>
-        </div>
-      </div>
       {/* Main bar putih */}
       <div className="border-b border-orange-100 bg-white/90 shadow-sm backdrop-blur">
         <div className="container-x flex h-16 items-center justify-between gap-3">

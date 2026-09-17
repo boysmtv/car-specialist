@@ -1,4 +1,5 @@
 import { seedCategories, seedFaq, seedGallery, seedProducts, seedServices, seedSettings } from "@/data/seed";
+import { getDemoItems } from "@/lib/demoStore";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Category, Faq, GalleryItem, Product, Service, SiteSettings } from "@/types";
 
@@ -24,7 +25,7 @@ export async function getCategories(): Promise<Category[]> {
 }
 
 export async function getServices(): Promise<Service[]> {
-  return trySupabase(async (sb) => {
+  const base = await trySupabase(async (sb) => {
     const { data } = await sb.from("services").select("*").eq("active", true).order("name");
     if (!data || data.length === 0) return seedServices;
     return (data as Service[]).map((s) => ({
@@ -34,6 +35,10 @@ export async function getServices(): Promise<Service[]> {
       process: Array.isArray(s.process) ? s.process : [],
     }));
   }, seedServices);
+  // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
+  const demo = await getDemoItems<Service>("services").catch(() => [] as Service[]);
+  const seen = new Set(base.map((s) => s.id));
+  return [...demo.filter((s) => s.active !== false && !seen.has(s.id)), ...base];
 }
 
 export async function getServiceBySlug(slug: string): Promise<Service | null> {
@@ -73,6 +78,13 @@ export async function getProducts(query: ProductQuery = {}): Promise<{ items: Pr
   }, null);
 
   let items = fromDb ?? [...seedProducts];
+
+  // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
+  try {
+    const demo = await getDemoItems<Product>("products");
+    const seen = new Set(items.map((x) => x.id));
+    items = [...demo.filter((x) => x && x.active !== false && !seen.has(x.id)), ...items];
+  } catch {}
 
   // Merge local admin overrides (hanya client; di server abaikan)
   if (q) {
@@ -116,11 +128,14 @@ export async function getRelatedProducts(p: Product, limit = 4): Promise<Product
 }
 
 export async function getGallery(): Promise<GalleryItem[]> {
-  return trySupabase(async (sb) => {
+  const base = await trySupabase(async (sb) => {
     const { data } = await sb.from("gallery").select("*").eq("published", true).order("sort_order");
     if (!data || data.length === 0) return seedGallery;
     return data as GalleryItem[];
   }, seedGallery);
+  const demo = await getDemoItems<GalleryItem>("gallery").catch(() => [] as GalleryItem[]);
+  const seen = new Set(base.map((g) => g.id));
+  return [...demo.filter((g) => g.published !== false && !seen.has(g.id)), ...base];
 }
 
 export async function getFaqs(): Promise<Faq[]> {
