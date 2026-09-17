@@ -49,9 +49,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     const onShow = (e: PageTransitionEvent) => { if (e.persisted) check(); };
     window.addEventListener("pageshow", onShow);
     window.addEventListener("focus", check);
+    // Cek berkala: sesi 30 menit habis di tengah jalan → langsung wajib login
+    const timer = setInterval(check, 30_000);
     return () => {
       window.removeEventListener("pageshow", onShow);
       window.removeEventListener("focus", check);
+      clearInterval(timer);
     };
   }, [path, router]);
 

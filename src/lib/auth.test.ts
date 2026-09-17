@@ -11,7 +11,7 @@ function memStore() {
 }
 
 describe("admin session", () => {
-  it("createSession punya token + expiry 12 jam", () => {
+  it("createSession punya token + expiry 30 menit", () => {
     const s = createSession("a@x.id", 1000);
     expect(s.email).toBe("a@x.id");
     expect(s.token.length).toBeGreaterThan(10);

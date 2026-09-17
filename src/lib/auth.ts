@@ -1,10 +1,10 @@
 "use client";
 // Session admin: Supabase bila configured, fallback demo lokal.
-// Sesi demo berupa token acak + masa berlaku 12 jam, disimpan di localStorage
+// Sesi demo berupa token acak + masa berlaku 30 MENIT, disimpan di localStorage
 // dan divalidasi (format + expiry) setiap dibaca.
 
 const KEY = "admin_session";
-export const SESSION_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+export const SESSION_MAX_AGE_MS = 30 * 60 * 1000;
 
 export interface AdminSession {
   email: string;
