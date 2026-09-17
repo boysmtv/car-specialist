@@ -101,7 +101,15 @@ alter table promotions enable row level security;
 alter table faq enable row level security;
 alter table site_settings enable row level security;
 
--- Public read-only
+-- Public read-only (aman diulang: drop dulu bila sudah ada)
+drop policy if exists "public read categories" on categories;
+drop policy if exists "public read products" on products;
+drop policy if exists "public read images" on product_images;
+drop policy if exists "public read services" on services;
+drop policy if exists "public read gallery" on gallery;
+drop policy if exists "public read promotions" on promotions;
+drop policy if exists "public read faq" on faq;
+drop policy if exists "public read settings" on site_settings;
 create policy "public read categories" on categories for select using (active = true);
 create policy "public read products" on products for select using (active = true and deleted_at is null);
 create policy "public read images" on product_images for select using (true);
@@ -111,10 +119,17 @@ create policy "public read promotions" on promotions for select using (active = 
 create policy "public read faq" on faq for select using (active = true);
 create policy "public read settings" on site_settings for select using (true);
 
--- Seed minimal
-insert into categories (name, slug, sort_order) values
-('AC Mobil','ac-mobil',1),('Power Window','power-window',2),('Central Lock','central-lock',3),
-('Audio','audio',4),('Electrical','electrical',5),('Interior','interior',6),('Exterior','exterior',7),('Variasi','variasi',8)
+-- Seed minimal (id kategori TETAP agar cocok dengan aplikasi)
+delete from categories where slug in ('ac-mobil','power-window','central-lock','audio','electrical','interior','exterior','variasi');
+insert into categories (id, name, slug, sort_order) values
+('1907348e-6a06-44fb-8975-29467f209298','AC Mobil','ac-mobil',1),
+('6c7728d0-c63b-4696-9665-7a05a8a2551c','Power Window','power-window',2),
+('d6269a66-672a-451c-8a3a-7e4eeb46827a','Central Lock','central-lock',3),
+('585f6f08-a64b-4844-8bad-360c5e484c1d','Audio','audio',4),
+('9cb36fbb-2e91-412b-81b4-c7672fc22a16','Electrical','electrical',5),
+('b6420654-d5c1-42fc-b3a2-60e3503d6cf2','Interior','interior',6),
+('904298f8-fc17-49f0-ba06-ea3707ce1485','Exterior','exterior',7),
+('f89ad157-9e33-45af-86ad-69cdad611f5e','Variasi','variasi',8)
 on conflict (slug) do nothing;
 
 insert into site_settings (business_name, tagline, whatsapp, phone, address, maps_url, opening_hours, default_seo_title, default_seo_description)

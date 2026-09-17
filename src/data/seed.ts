@@ -3,14 +3,14 @@ import type { Category, Faq, SiteSettings } from "@/types";
 // Taksonomi kategori (struktur katalog, bukan data mock).
 // Produk, layanan & galeri TIDAK punya seed — semua diisi lewat /admin.
 export const seedCategories: Category[] = [
-  { id: "c-ac", name: "AC Mobil", slug: "ac-mobil", description: "Komponen & servis AC mobil", sort_order: 1, active: true },
-  { id: "c-pw", name: "Power Window", slug: "power-window", description: "Motor, regulator & switch", sort_order: 2, active: true },
-  { id: "c-cl", name: "Central Lock", slug: "central-lock", description: "Actuator, modul & remote", sort_order: 3, active: true },
-  { id: "c-audio", name: "Audio", slug: "audio", description: "Head unit, speaker & amplifier", sort_order: 4, active: true },
-  { id: "c-elec", name: "Electrical", slug: "electrical", description: "Kelistrikan mobil", sort_order: 5, active: true },
-  { id: "c-int", name: "Interior", slug: "interior", description: "Aksesori interior", sort_order: 6, active: true },
-  { id: "c-ext", name: "Exterior", slug: "exterior", description: "Aksesori exterior", sort_order: 7, active: true },
-  { id: "c-var", name: "Variasi", slug: "variasi", description: "Variasi & aksesori umum", sort_order: 8, active: true },
+  { id: "1907348e-6a06-44fb-8975-29467f209298", name: "AC Mobil", slug: "ac-mobil", description: "Komponen & servis AC mobil", sort_order: 1, active: true },
+  { id: "6c7728d0-c63b-4696-9665-7a05a8a2551c", name: "Power Window", slug: "power-window", description: "Motor, regulator & switch", sort_order: 2, active: true },
+  { id: "d6269a66-672a-451c-8a3a-7e4eeb46827a", name: "Central Lock", slug: "central-lock", description: "Actuator, modul & remote", sort_order: 3, active: true },
+  { id: "585f6f08-a64b-4844-8bad-360c5e484c1d", name: "Audio", slug: "audio", description: "Head unit, speaker & amplifier", sort_order: 4, active: true },
+  { id: "9cb36fbb-2e91-412b-81b4-c7672fc22a16", name: "Electrical", slug: "electrical", description: "Kelistrikan mobil", sort_order: 5, active: true },
+  { id: "b6420654-d5c1-42fc-b3a2-60e3503d6cf2", name: "Interior", slug: "interior", description: "Aksesori interior", sort_order: 6, active: true },
+  { id: "904298f8-fc17-49f0-ba06-ea3707ce1485", name: "Exterior", slug: "exterior", description: "Aksesori exterior", sort_order: 7, active: true },
+  { id: "f89ad157-9e33-45af-86ad-69cdad611f5e", name: "Variasi", slug: "variasi", description: "Variasi & aksesori umum", sort_order: 8, active: true },
 ];
 
 export const seedFaq: Faq[] = [
