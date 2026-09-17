@@ -8,6 +8,17 @@ export function cloudDb() {
   return createClient();
 }
 
+/** Minta server refresh cache halaman publik agar data baru langsung tampil. */
+export function refreshPublic(paths: string[]): void {
+  try {
+    fetch("/api/revalidate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths }),
+    }).catch(() => {});
+  } catch {}
+}
+
 /** true bila dibuka di localhost (mode coba-coba). Di hosting (Vercel),
  *  simpan lokal TIDAK tampil publik — user wajib tahu. */
 export function isLocalHost(): boolean {

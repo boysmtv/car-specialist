@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import type { Service } from "@/types";
 import { SERVICE_ICONS } from "@/components/marketing/ServiceIcon";
-import { cloudDb, cloudDeleteService, cloudListServices, cloudSaveService, isLocalHost } from "@/lib/adminDb";
+import { cloudDb, cloudDeleteService, cloudListServices, cloudSaveService, isLocalHost, refreshPublic } from "@/lib/adminDb";
 
 const LS = "demo_services";
 const DEFAULT_PROCESS = "Konsultasi via WhatsApp\nPemeriksaan\nEstimasi\nPengerjaan";
@@ -145,6 +145,7 @@ export default function ServicesAdmin() {
     if (!isEdit && items.some((s) => s.slug === item.slug)) { toast.error("Layanan dengan nama itu sudah ada"); return; }
     if (cloudDb()) {
       if (await saveToCloud(item, isEdit)) {
+        refreshPublic(["/", "/layanan", `/layanan/${item.slug}`]);
         toast.success(isEdit ? "Layanan diperbarui & tampil di website." : "Layanan ditambahkan & tampil di website.");
       } else {
         toast.error(CLOUD_ERR);

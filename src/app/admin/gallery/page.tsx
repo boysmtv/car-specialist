@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload } from "lucide-react";
 import type { GalleryItem } from "@/types";
-import { cloudDb, cloudDeleteGallery, cloudListGallery, cloudSaveGallery, fileToPublicUrl, isLocalHost } from "@/lib/adminDb";
+import { cloudDb, cloudDeleteGallery, cloudListGallery, cloudSaveGallery, fileToPublicUrl, isLocalHost, refreshPublic } from "@/lib/adminDb";
 
 const LS = "demo_gallery";
 const MAX_FILE = 2 * 1024 * 1024;
@@ -83,6 +83,7 @@ export default function GalleryAdmin() {
         };
         if (cloudDb()) {
           await cloudSaveGallery(item);
+          refreshPublic(["/", "/galeri"]);
         } else {
           const res = await fetch("/api/demo", {
             method: "POST", headers: { "Content-Type": "application/json" },
@@ -97,7 +98,6 @@ export default function GalleryAdmin() {
             }
           }
         }
-      }
       toast.success("Foto tersimpan & langsung tampil di galeri.");
     } catch (e) {
       toast.error((e as Error).message || "Gagal menyimpan.");
