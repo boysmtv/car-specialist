@@ -2,14 +2,24 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Pencil, Trash2, PackageSearch } from "lucide-react";
+import { toast } from "sonner";
 import type { Product } from "@/types";
 import { availabilityColor, availabilityLabel, priceLabel } from "@/lib/utils";
+import { cloudDb, cloudDeleteProduct, cloudListProducts } from "@/lib/adminDb";
 
 export default function ProductsAdmin() {
   const [items, setItems] = useState<Product[]>([]);
   const [q, setQ] = useState("");
+  const [cloud, setCloud] = useState(false);
   useEffect(() => {
     (async () => {
+      try {
+        const data = await cloudListProducts();
+        setCloud(true);
+        setItems(data);
+        return;
+      } catch {}
+      setCloud(false);
       try {
         const r = await fetch("/api/demo?entity=products", { cache: "no-store" });
         const j = await r.json();
@@ -29,6 +39,15 @@ export default function ProductsAdmin() {
 
   function remove(id: string) {
     if (!confirm("Hapus produk ini? Produk akan disembunyikan dari website.")) return;
+    if (cloudDb()) {
+      cloudDeleteProduct(id)
+        .then(() => {
+          toast.success("Produk dihapus.");
+          setItems((s) => s.filter((x) => x.id !== id));
+        })
+        .catch(() => toast.error("Gagal menghapus. Pastikan login akun Supabase."));
+      return;
+    }
     try {
       const extra: Product[] = JSON.parse(localStorage.getItem("demo_products") || "[]");
       localStorage.setItem("demo_products", JSON.stringify(extra.filter((x) => x.id !== id)));
@@ -44,7 +63,7 @@ export default function ProductsAdmin() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Produk</h1>
-          <p className="mt-0.5 text-sm text-slate-500">{filtered.length} produk di katalog</p>
+          <p className="mt-0.5 text-sm text-slate-500">{filtered.length} produk di katalog{cloud ? " · terhubung database" : ""}</p>
         </div>
         <Link href="/admin/products/new" className="btn-gold !py-2 text-xs"><Plus size={15} /> Tambah Produk</Link>
       </div>

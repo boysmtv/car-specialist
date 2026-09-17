@@ -10,53 +10,87 @@ import { seedCategories } from "@/data/seed";
 import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
+import { cloudDb, cloudSaveProduct, fileToPublicUrl } from "@/lib/adminDb";
 
 type F = z.infer<typeof productSchema>;
 
-interface Img { url: string }
+interface Img { url: string; file?: File }
 
 export default function NewProduct() {
   const router = useRouter();
   const [images, setImages] = useState<Img[]>([]);
   const [urlInput, setUrlInput] = useState("");
+  const [saving, setSaving] = useState(false);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<F>({
     resolver: zodResolver(productSchema),
     defaultValues: { price_mode: "START_FROM", availability: "AVAILABLE", featured: false, active: true },
   });
-  const name = watch("name");
   const priceMode = watch("price_mode");
 
   function addUrl() {
-    if (!urlInput.trim()) return;
+    if (!urlInput.trim() || images.length >= 6) return;
     setImages((s) => [...s, { url: urlInput.trim() }]);
     setUrlInput("");
   }
 
   function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []).slice(0, 6 - images.length);
-    if (images.length + files.length > 6) { toast.error("Maksimal 6 gambar/produk"); return; }
     for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
       if (f.size > 2 * 1024 * 1024) { toast.error(`"${f.name}" > 2MB, dilewati`); continue; }
-      const r = new FileReader();
-      r.onload = () => setImages((s) => (s.length < 6 ? [...s, { url: String(r.result) }] : s));
-      r.readAsDataURL(f);
+      setImages((s) => (s.length < 6 ? [...s, { url: URL.createObjectURL(f), file: f }] : s));
     }
     e.target.value = "";
   }
 
-  function onSubmit(v: F) {
+  async function resolveUrls(): Promise<string[] | null> {
+    try {
+      return await Promise.all(images.map((im) => (im.file ? fileToPublicUrl(im.file, "products") : im.url)));
+    } catch (e) {
+      if ((e as Error).message === "CLOUD_UPLOAD_FAIL") {
+        toast.error("Upload gagal. Pastikan migrasi 0002 sudah dijalankan & login akun Supabase.");
+      } else {
+        toast.error("Gagal menyiapkan foto.");
+      }
+      return null;
+    }
+  }
+
+  async function onSubmit(v: F) {
     if (images.length === 0) { toast.error("Upload minimal 1 foto cover sebelum Publish"); return; }
     if (v.price_mode === "FIXED" && !v.price) { toast.error("Harga wajib untuk mode FIXED"); return; }
-    const finalSlug = slugify(v.name);
+    setSaving(true);
+    const urls = await resolveUrls();
+    if (!urls) { setSaving(false); return; }
+    const finalSlug = v.slug || slugify(v.name);
     const { slug: _omit, active: _a, ...rest } = v;
-    // START_FROM memakai price_min sebagai batas bawah.
     const price_min = v.price_mode === "START_FROM" ? (v.price ?? undefined) : undefined;
     const cat = seedCategories.find((c) => c.id === v.category_id);
+    if (cloudDb()) {
+      try {
+        await cloudSaveProduct(
+          {
+            category_id: v.category_id, name: v.name, slug: finalSlug,
+            brand: v.brand, short_description: v.short_description, description: v.description,
+            warranty_text: v.warranty_text, price_mode: v.price_mode, price: v.price,
+            price_min, price_max: undefined, availability: v.availability,
+          },
+          urls, false,
+        );
+        toast.success("Produk dipublish & tampil di katalog.");
+        router.push("/admin/products");
+        return;
+      } catch {
+        toast.error("Gagal menyimpan. Pastikan login akun Supabase & migrasi 0002.");
+        setSaving(false);
+        return;
+      }
+    }
     const pid = `demo-${Date.now()}`;
     const item = {
       id: pid, slug: finalSlug,
       category_name: cat?.name, category_slug: cat?.slug,
-      images: images.map((im, i) => ({ id: `${pid}-${i}`, product_id: pid, url: im.url, alt_text: v.name, sort_order: i + 1, is_cover: i === 0 })),
+      images: urls.map((url, i) => ({ id: `${pid}-${i}`, product_id: pid, url, alt_text: v.name, sort_order: i + 1, is_cover: i === 0 })),
       active: true, publication_status: "PUBLISHED",
       ...rest,
       price_min,
@@ -114,12 +148,8 @@ export default function NewProduct() {
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="Tempel URL gambar…" className="input" />
-            <button type="button" onClick={addUrl} className="btn-outline shrink-0 !px-3">+</button>
-          </div>
-          <label className="btn-outline cursor-pointer justify-center !py-2 text-xs"><Upload size={14} /> Upload dari HP<input type="file" accept="image/*" multiple onChange={onFiles} className="hidden" /></label>
-          <button className="btn-gold mt-1">Publish ke Katalog</button>
+          <label className="btn-outline cursor-pointer justify-center !py-2 text-xs"><Upload size={14} /> Upload foto<input type="file" accept="image/*" multiple onChange={onFiles} className="hidden" /></label>
+          <button disabled={saving} className="btn-gold mt-1">{saving ? "Menyimpan…" : "Publish ke Katalog"}</button>
         </div>
       </form>
     </div>

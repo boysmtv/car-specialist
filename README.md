@@ -13,7 +13,19 @@ npm run dev
 #   email: admin@specialist-ac.local / password: admin123
 ```
 
-Tanpa env Supabase, website memakai **seed data** + demo lokal. Dengan env terisi, katalog dibaca dari database.
+Tanpa env Supabase, website berjalan mode lokal (data admin tersimpan di server dev). Dengan env terisi, katalog dibaca dari database.
+
+## Setup production (Supabase — wajib agar admin permanen di Vercel)
+
+1. Buat project di supabase.com (atau via Vercel Storage) → jalankan **berurutan** di SQL Editor:
+   - `supabase/migrations/0001_init.sql`
+   - `supabase/migrations/0002_admin_storage.sql` (hak tulis admin + bucket foto `images`)
+2. Auth → nonaktifkan **Enable sign ups** (admin-only). Buat user admin manual → insert ke `profiles` dengan role `ADMIN`:
+   ```sql
+   insert into profiles (id, email, name, role) values ('UID_ADMIN', 'email@kamu', 'Admin', 'ADMIN');
+   ```
+3. Isi env di Vercel: `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_WA_NUMBER=6282111906994` → Redeploy.
+4. Login `/admin/login` **dengan akun Supabase** → tambah layanan/produk/galeri → langsung tampil permanen.
 
 ## Alur konsultasi (tanpa booking)
 

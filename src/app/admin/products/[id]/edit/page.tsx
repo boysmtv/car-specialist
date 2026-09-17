@@ -3,10 +3,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import { seedCategories } from "@/data/seed";
-import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 import { Star, Trash2, Upload } from "lucide-react";
 import type { Product } from "@/types";
+import { cloudDb, cloudListProducts, cloudSaveProduct, fileToPublicUrl } from "@/lib/adminDb";
 
 async function fetchDemo(): Promise<Product[]> {
   try {
@@ -20,14 +20,15 @@ function loadLocal(): Product[] {
   try { return JSON.parse(localStorage.getItem("demo_products") || "[]"); } catch { return []; }
 }
 
+interface Img { url: string; file?: File }
+
 export default function EditProduct({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [item, setItem] = useState<Product | null>(null);
   const [loaded, setLoaded] = useState(false);
-  // form state
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
   const [brand, setBrand] = useState("");
   const [categoryId, setCategoryId] = useState(seedCategories[0].id);
   const [availability, setAvailability] = useState("AVAILABLE");
@@ -36,22 +37,28 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [shortDesc, setShortDesc] = useState("");
   const [desc, setDesc] = useState("");
   const [warranty, setWarranty] = useState("");
-  const [images, setImages] = useState<string[]>([]);
-  const [urlInput, setUrlInput] = useState("");
+  const [images, setImages] = useState<Img[]>([]);
 
   useEffect(() => {
     (async () => {
-      const all = [...(await fetchDemo()), ...loadLocal()];
-      const found = all.find((x) => x.id === id) || all.find((x) => x.slug === id);
+      let found: Product | undefined;
+      try {
+        const cloud = await cloudListProducts();
+        found = cloud.find((x) => x.id === id) || cloud.find((x) => x.slug === id);
+      } catch {}
+      if (!found) {
+        const all = [...(await fetchDemo()), ...loadLocal()];
+        found = all.find((x) => x.id === id) || all.find((x) => x.slug === id);
+      }
       if (found) {
         setItem(found);
-        setName(found.name); setSlug(found.slug); setBrand(found.brand || "");
+        setName(found.name); setBrand(found.brand || "");
         setCategoryId(found.category_id); setAvailability(found.availability);
         setPriceMode(found.price_mode === "RANGE" ? "START_FROM" : found.price_mode);
         setPrice(String(found.price ?? found.price_min ?? ""));
         setShortDesc(found.short_description || ""); setDesc(found.description || "");
         setWarranty(found.warranty_text || "");
-        setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => i.url));
+        setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => ({ url: i.url })));
       }
       setLoaded(true);
     })();
@@ -60,15 +67,14 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []).slice(0, 6 - images.length);
     for (const f of files) {
+      if (!f.type.startsWith("image/")) continue;
       if (f.size > 2 * 1024 * 1024) { toast.error(`"${f.name}" > 2MB, dilewati`); continue; }
-      const r = new FileReader();
-      r.onload = () => setImages((s) => (s.length < 6 ? [...s, String(r.result)] : s));
-      r.readAsDataURL(f);
+      setImages((s) => (s.length < 6 ? [...s, { url: URL.createObjectURL(f), file: f }] : s));
     }
     e.target.value = "";
   }
 
-  async function persist(next: Product, msg: string) {
+  async function persistDemo(next: Product) {
     try {
       await fetch("/api/demo", {
         method: "DELETE", headers: { "Content-Type": "application/json" },
@@ -85,8 +91,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
       prev.unshift(next);
       localStorage.setItem("demo_products", JSON.stringify(prev));
     } catch {}
-    toast.success(msg);
-    router.push("/admin/products");
   }
 
   async function save() {
@@ -95,9 +99,42 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     if (images.length === 0) { toast.error("Minimal 1 foto"); return; }
     const p = price ? Number(price) : undefined;
     if (priceMode === "FIXED" && !p) { toast.error("Harga wajib untuk mode FIXED"); return; }
+    setSaving(true);
+    let urls: string[];
+    try {
+      urls = await Promise.all(images.map((im) => (im.file ? fileToPublicUrl(im.file, "products") : im.url)));
+    } catch (e) {
+      toast.error((e as Error).message === "CLOUD_UPLOAD_FAIL"
+        ? "Upload gagal. Pastikan migrasi 0002 sudah dijalankan & login akun Supabase."
+        : "Gagal menyiapkan foto.");
+      setSaving(false);
+      return;
+    }
     const cat = seedCategories.find((c) => c.id === categoryId);
+    if (cloudDb()) {
+      try {
+        await cloudSaveProduct(
+          {
+            id: item.id, category_id: categoryId, name: name.trim(), slug: item.slug,
+            brand: brand.trim() || null, short_description: shortDesc.trim() || null,
+            description: desc.trim() || null, warranty_text: warranty.trim() || null,
+            price_mode: priceMode, price: priceMode === "FIXED" ? (p ?? null) : null,
+            price_min: priceMode === "START_FROM" ? (p ?? null) : null,
+            price_max: null, availability, active: true, featured: item.featured ?? false,
+          },
+          urls, true,
+        );
+        toast.success("Perubahan disimpan & tampil di katalog.");
+        router.push("/admin/products");
+        return;
+      } catch {
+        toast.error("Gagal menyimpan. Pastikan login akun Supabase.");
+        setSaving(false);
+        return;
+      }
+    }
     const next: Product = {
-      ...item, name: name.trim(), slug: item.slug,
+      ...item, name: name.trim(),
       brand: brand.trim() || null, category_id: categoryId,
       category_name: cat?.name, category_slug: cat?.slug,
       availability: availability as Product["availability"],
@@ -108,9 +145,11 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
       short_description: shortDesc.trim() || null,
       description: desc.trim() || null,
       warranty_text: warranty.trim() || null,
-      images: images.map((url, i) => ({ id: `${item.id}-${i}-${Date.now()}`, product_id: item.id, url, alt_text: name.trim(), sort_order: i + 1, is_cover: i === 0 })),
+      images: urls.map((url, i) => ({ id: `${item.id}-${i}-${Date.now()}`, product_id: item.id, url, alt_text: name.trim(), sort_order: i + 1, is_cover: i === 0 })),
     };
-    persist(next, "Perubahan disimpan & tampil di katalog.");
+    await persistDemo(next);
+    toast.success("Perubahan disimpan & tampil di katalog.");
+    router.push("/admin/products");
   }
 
   if (!loaded) return <div className="py-16 text-center text-sm text-slate-500">Memuat produk…</div>;
@@ -139,10 +178,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         <div className="card-luxe grid gap-2 p-4 lg:sticky lg:top-20">
           <b className="text-sm">Foto produk ({images.length}/6)</b>
           <div className="grid grid-cols-3 gap-2">
-            {images.map((url, i) => (
+            {images.map((im, i) => (
               <div key={i} className="relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className={`aspect-square w-full rounded-lg border-2 object-cover ${i === 0 ? "border-primary" : "border-border"}`} />
+                <img src={im.url} alt="" className={`aspect-square w-full rounded-lg border-2 object-cover ${i === 0 ? "border-primary" : "border-border"}`} />
                 {i === 0 && <span className="badge absolute left-1 top-1 bg-primary text-white"><Star size={10} /> Cover</span>}
                 <div className="absolute right-1 top-1 flex gap-1">
                   {i !== 0 && <button type="button" title="Jadikan cover" onClick={() => setImages((s) => [s[i], ...s.filter((_, j) => j !== i)])} className="grid h-6 w-6 place-items-center rounded-md bg-white/95 text-primary shadow"><Star size={12} /></button>}
@@ -151,13 +190,9 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
               </div>
             ))}
           </div>
-          <div className="flex gap-2">
-            <input value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="Tempel URL gambar…" className="input" />
-            <button type="button" onClick={() => { if (urlInput.trim() && images.length < 6) { setImages((s) => [...s, urlInput.trim()]); setUrlInput(""); } }} className="btn-outline shrink-0 !px-3">+</button>
-          </div>
-          <label className="btn-outline cursor-pointer justify-center !py-2 text-xs"><Upload size={14} /> Upload dari HP<input type="file" accept="image/*" multiple onChange={onFiles} className="hidden" /></label>
-          <a href={`/produk/${slugify(slug || name)}`} target="_blank" rel="noreferrer" className="btn-outline">Lihat di Katalog</a>
-          <button onClick={save} className="btn-gold">Simpan Perubahan</button>
+          <label className="btn-outline cursor-pointer justify-center !py-2 text-xs"><Upload size={14} /> Upload foto<input type="file" accept="image/*" multiple onChange={onFiles} className="hidden" /></label>
+          <a href={`/produk/${item.slug}`} target="_blank" rel="noreferrer" className="btn-outline">Lihat di Katalog</a>
+          <button onClick={save} disabled={saving} className="btn-gold">{saving ? "Menyimpan…" : "Simpan Perubahan"}</button>
         </div>
       </div>
     </div>
