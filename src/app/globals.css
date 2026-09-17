@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+
+body { @apply bg-background text-slate-900 antialiased overflow-x-clip; }
+
+.container-x { @apply mx-auto w-full max-w-6xl px-4; }
+
+.card { @apply rounded-xl border border-border bg-surface shadow-card; }
+.card-luxe { @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_10px_30px_-12px_rgba(16,24,40,0.18)]; }
+
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold tracking-tight transition active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:opacity-60 min-h-[44px]; }
+.btn-primary { @apply btn bg-primary text-white shadow-[0_8px_20px_-8px_rgba(232,114,42,0.7)] hover:bg-[#C2571B]; }
+.btn-wa { @apply btn bg-[#25D366] text-white shadow-[0_8px_20px_-8px_rgba(37,211,102,0.7)] hover:bg-[#1eb85a]; }
+.btn-outline { @apply btn border border-border bg-white hover:bg-slate-50; }
+.btn-danger { @apply btn bg-danger text-white hover:bg-red-700; }
+.btn-gold { @apply btn bg-[#E8722A] text-white shadow-[0_8px_18px_-8px_rgba(232,114,42,0.7)] hover:bg-[#D1601F]; }
+.btn-ghostlight { @apply btn border border-border bg-white text-slate-700 hover:bg-orange-50; }
+
+.input { @apply w-full rounded-lg border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20; }
+.label { @apply mb-1 block text-sm font-medium text-slate-700; }
+.badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+.badge-gold { @apply badge border border-orange-200 bg-orange-50 text-gold-dark; }
+
+.gold-text { @apply text-gold-dark; }
+
+.hero-soft {
+  background:
+    radial-gradient(700px 320px at 85% 0%, rgba(238,138,58,0.14), transparent 60%),
+    linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 65%, #FFF7ED 100%);
+}
+
+.hairline-gold { @apply h-px w-16 bg-gradient-to-r from-transparent via-gold to-transparent; }
+
+.skeleton { @apply animate-pulse rounded-lg bg-slate-200; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
