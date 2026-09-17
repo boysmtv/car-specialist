@@ -10,3 +10,4 @@ demo-data.json
 .agent_memory/
 .ai-agent/
 
+tsconfig.tsbuildinfo
