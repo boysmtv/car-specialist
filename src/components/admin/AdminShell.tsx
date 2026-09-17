@@ -23,12 +23,22 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [cloudSession, setCloudSession] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (path === "/admin/login") { setReady(true); return; }
     const s = getSession();
     if (!s) router.replace(`/admin/login?redirect=${encodeURIComponent(path || "/admin/dashboard")}`);
-    else { setEmail(s.email); setReady(true); }
+    else {
+      setEmail(s.email);
+      setReady(true);
+      // Cek apakah ada sesi Supabase asli (bisa tulis database) atau cuma demo lokal
+      import("@/lib/supabase/client").then(({ createClient }) => {
+        createClient()?.auth.getSession().then(({ data }) => {
+          setCloudSession(!!data.session);
+        }).catch(() => setCloudSession(false));
+      }).catch(() => setCloudSession(false));
+    }
   }, [path, router]);
 
   if (path === "/admin/login") return <>{children}</>;
@@ -73,6 +83,11 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <div className="mt-auto grid gap-2 pt-6">
         <div className="rounded-xl bg-orange-50 px-3 py-2.5 text-xs">
           <p className="truncate font-semibold text-slate-700">{email}</p>
+          {cloudSession !== null && (
+            <p className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ${cloudSession ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+              {cloudSession ? "● Supabase (bisa simpan)" : "● Demo (tidak permanen)"}
+            </p>
+          )}
           <button
             onClick={() => { clearSession(); router.replace("/admin/login"); }}
             className="mt-1 inline-flex items-center gap-1 font-semibold text-red-600 hover:underline"
