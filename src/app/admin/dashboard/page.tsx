@@ -19,7 +19,7 @@ export default function Dashboard() {
         </div>
         <a href="/" target="_blank" rel="noreferrer" className="btn-gold !py-2 text-xs"><Rocket size={14} /> Buka Website</a>
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((c) => (
           <Link key={c.l} href={c.href} className="card-luxe group flex items-center gap-4 p-5 transition hover:-translate-y-0.5 hover:border-orange-200 hover:shadow-lg">
             <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-orange-100 text-primary">{c.icon}</span>

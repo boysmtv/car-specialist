@@ -107,7 +107,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <ExternalLink size={13} /> Lihat Website
             </a>
           </div>
-          <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">{children}</div>
+          <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8">{children}</div>
         </div>
       </div>
     </div>
