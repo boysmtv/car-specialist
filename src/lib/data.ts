@@ -1,4 +1,4 @@
-import { seedCategories, seedFaq, seedGallery, seedProducts, seedServices, seedSettings } from "@/data/seed";
+import { seedCategories, seedFaq, seedSettings } from "@/data/seed";
 import { getDemoItems, getDemoSettings } from "@/lib/demoStore";
 import { isServerSupabaseConfigured } from "@/lib/supabase/server";
 import { createServerSupabase } from "@/lib/supabase/server";
@@ -28,14 +28,14 @@ export async function getCategories(): Promise<Category[]> {
 export async function getServices(): Promise<Service[]> {
   const base = await trySupabase(async (sb) => {
     const { data } = await sb.from("services").select("*").eq("active", true).order("name");
-    if (!data || data.length === 0) return seedServices;
+    if (!data || data.length === 0) return [] as Service[];
     return (data as Service[]).map((s) => ({
       ...s,
       symptoms: Array.isArray(s.symptoms) ? s.symptoms : [],
       diagnostics: Array.isArray(s.diagnostics) ? s.diagnostics : [],
       process: Array.isArray(s.process) ? s.process : [],
     }));
-  }, seedServices);
+  }, []);
   // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
   const demo = await getDemoItems<Service>("services").catch(() => [] as Service[]);
   const seen = new Set(base.map((s) => s.id));
@@ -78,7 +78,7 @@ export async function getProducts(query: ProductQuery = {}): Promise<{ items: Pr
     });
   }, null);
 
-  let items = fromDb ?? [...seedProducts];
+  let items = fromDb ?? [];
 
   // Item yang ditambah admin (demo file / tanpa Supabase) ikut tampil publik
   try {
@@ -131,9 +131,9 @@ export async function getRelatedProducts(p: Product, limit = 4): Promise<Product
 export async function getGallery(): Promise<GalleryItem[]> {
   const base = await trySupabase(async (sb) => {
     const { data } = await sb.from("gallery").select("*").eq("published", true).order("sort_order");
-    if (!data || data.length === 0) return seedGallery;
+    if (!data || data.length === 0) return [] as GalleryItem[];
     return data as GalleryItem[];
-  }, seedGallery);
+  }, []);
   const demo = await getDemoItems<GalleryItem>("gallery").catch(() => [] as GalleryItem[]);
   const seen = new Set(base.map((g) => g.id));
   return [...demo.filter((g) => g.published !== false && !seen.has(g.id)), ...base];

@@ -18,7 +18,13 @@ export default async function GaleriPage({ searchParams }: { searchParams: { typ
           <a key={t} href={t === "Semua" ? "/galeri" : `/galeri?type=${encodeURIComponent(t)}`} className={`rounded-full border px-3 py-1 text-xs font-semibold ${active === t ? "border-primary bg-orange-50 text-primary" : "border-border bg-white"}`}>{t}</a>
         ))}
       </div>
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {items.length === 0 ? (
+        <div className="card-luxe mt-5 p-10 text-center">
+          <p className="font-bold">Belum ada foto.</p>
+          <p className="mt-1 text-sm text-slate-500">Dokumentasi hasil pekerjaan akan tampil di sini.</p>
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((g) => (
           <div key={g.id} className="card overflow-hidden">
             {g.before_image_url && g.after_image_url ? (
@@ -30,7 +36,8 @@ export default async function GaleriPage({ searchParams }: { searchParams: { typ
             <div className="p-3 text-sm"><b>{g.title}</b>{g.vehicle && <p className="text-slate-500">{g.vehicle} · {g.type}</p>}</div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

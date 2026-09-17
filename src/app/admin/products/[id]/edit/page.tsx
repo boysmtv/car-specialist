@@ -2,10 +2,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { seedCategories, seedProducts } from "@/data/seed";
+import { seedCategories } from "@/data/seed";
 import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
-import { Copy, Star, Trash2, Upload } from "lucide-react";
+import { Star, Trash2, Upload } from "lucide-react";
 import type { Product } from "@/types";
 
 async function fetchDemo(): Promise<Product[]> {
@@ -24,7 +24,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const router = useRouter();
   const [item, setItem] = useState<Product | null>(null);
-  const [isSeed, setIsSeed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   // form state
   const [name, setName] = useState("");
@@ -53,9 +52,6 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         setShortDesc(found.short_description || ""); setDesc(found.description || "");
         setWarranty(found.warranty_text || "");
         setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => i.url));
-      } else {
-        const seed = seedProducts.find((x) => x.id === id || x.slug === id);
-        if (seed) { setItem(seed); setIsSeed(true); }
       }
       setLoaded(true);
     })();
@@ -94,7 +90,7 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   }
 
   async function save() {
-    if (!item || isSeed) return;
+    if (!item) return;
     if (name.trim().length < 3) { toast.error("Nama minimal 3 karakter"); return; }
     if (images.length === 0) { toast.error("Minimal 1 foto"); return; }
     const p = price ? Number(price) : undefined;
@@ -117,38 +113,8 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     persist(next, "Perubahan disimpan & tampil di katalog.");
   }
 
-  async function duplicate() {
-    if (!item) return;
-    const nid = `demo-${Date.now()}`;
-    const copy: Product = {
-      ...item, id: nid, slug: `${item.slug}-copy`,
-      images: (item.images || []).map((im, i) => ({ ...im, id: `${nid}-${i}`, product_id: nid })),
-      active: true,
-    };
-    await persist(copy, "Diduplikat — silakan edit versi barunya.");
-    router.push(`/admin/products/${nid}/edit`);
-  }
-
   if (!loaded) return <div className="py-16 text-center text-sm text-slate-500">Memuat produk…</div>;
-  if (!item) return <div className="card mt-3 p-8 text-center">Produk tidak ditemukan. <Link href="/admin/products" className="text-primary font-semibold">Kembali</Link></div>;
-
-  // Produk bawaan: read-only + tombol duplikat
-  if (isSeed) {
-    return (
-      <div>
-        <Link href="/admin/products" className="text-xs font-semibold text-primary hover:underline">← Kembali ke produk</Link>
-        <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-900">{item.name}</h1>
-        <div className="card-luxe mt-3 flex flex-wrap items-center gap-3 p-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {item.images[0] && <img src={item.images[0].url} alt="" className="h-20 w-20 rounded-xl border border-border object-cover" />}
-          <p className="max-w-xl text-sm text-slate-600">
-            Ini produk <b>bawaan</b>. Untuk mengedit bebas (termasuk ganti gambar), duplikat dulu menjadi produk milikmu.
-          </p>
-          <button onClick={duplicate} className="btn-gold !py-2 text-xs"><Copy size={14} /> Duplikat & Edit</button>
-        </div>
-      </div>
-    );
-  }
+  if (!item) return <div className="card-luxe mt-3 p-8 text-center"><b>Produk tidak ditemukan.</b><p className="mt-1 text-sm text-slate-500">Mungkin sudah dihapus.</p><Link href="/admin/products" className="mt-3 inline-block text-sm font-semibold text-primary">← Kembali ke produk</Link></div>;
 
   return (
     <div>

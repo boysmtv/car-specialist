@@ -61,13 +61,20 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* QUICK SERVICES */}
+      {/* LAYANAN */}
       <section className="container-x py-12">
         <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Ada masalah apa dengan mobilmu?</h2>
         <p className="mt-1 text-slate-600">Pilih layanan atau ceritakan keluhannya. Kami bantu arahkan pemeriksaan yang sesuai.</p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {services.slice(0, 6).map((s) => <ServiceCard key={s.id} s={s} />)}
-        </div>
+        {services.length === 0 ? (
+          <div className="card-luxe mt-5 p-8 text-center">
+            <p className="font-bold text-slate-900">Layanan segera hadir.</p>
+            <p className="mt-1 text-sm text-slate-500">Ceritakan kebutuhan mobilmu langsung via WhatsApp.</p>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {services.slice(0, 6).map((s) => <ServiceCard key={s.id} s={s} />)}
+          </div>
+        )}
       </section>
 
       {/* HOME SERVICE — pita full-bleed */}
@@ -108,34 +115,46 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* PRODUCTS */}
+      {/* PRODUK */}
       <section className="container-x py-12">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Cari komponen atau aksesori mobil?</h2>
             <p className="mt-1 text-slate-600">Lihat katalog produk kami dan tanyakan kompatibilitasnya untuk mobilmu.</p>
           </div>
-          <Link href="/produk" className="btn-outline hidden sm:inline-flex">Semua produk</Link>
+          {prod.items.length > 0 && <Link href="/produk" className="btn-outline hidden sm:inline-flex">Semua produk</Link>}
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {prod.items.map((p) => <ProductCard key={p.id} p={p} wa={settings.whatsapp} />)}
-        </div>
-        <Link href="/produk" className="btn-outline mt-4 w-full sm:hidden">Semua produk</Link>
+        {prod.items.length === 0 ? (
+          <div className="card-luxe mt-5 p-8 text-center">
+            <p className="font-bold text-slate-900">Katalog segera hadir.</p>
+            <p className="mt-1 text-sm text-slate-500">Langsung tanya ketersediaan & harga via WhatsApp.</p>
+            <a className="btn-wa mx-auto mt-4 w-fit" target="_blank" rel="noreferrer" href={waLink("Halo, saya ingin bertanya tentang produk yang tersedia.", settings.whatsapp)}>Tanya WhatsApp</a>
+          </div>
+        ) : (
+          <>
+            <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+              {prod.items.map((p) => <ProductCard key={p.id} p={p} wa={settings.whatsapp} />)}
+            </div>
+            <Link href="/produk" className="btn-outline mt-4 w-full sm:hidden">Semua produk</Link>
+          </>
+        )}
       </section>
 
       {/* GALERI HASIL PEKERJAAN */}
-      <section className="container-x pb-4">
-        <div className="flex items-end justify-between gap-3">
-          <h2 className="text-xl font-extrabold">Hasil pekerjaan</h2>
-          <Link href="/galeri" className="text-sm font-semibold text-primary">Lihat galeri →</Link>
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {gallery.slice(0, 6).map((g) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={g.id} src={g.image_url} alt={g.title} loading="lazy" className="aspect-square w-full rounded-lg border border-border object-cover" />
-          ))}
-        </div>
-      </section>
+      {gallery.length > 0 && (
+        <section className="container-x pb-4">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="text-xl font-extrabold">Hasil pekerjaan</h2>
+            <Link href="/galeri" className="text-sm font-semibold text-primary">Lihat galeri →</Link>
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2">
+            {gallery.slice(0, 6).map((g) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={g.id} src={g.image_url} alt={g.title} loading="lazy" className="aspect-square w-full rounded-lg border border-border object-cover" />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* LOKASI + MAPS (klik langsung) */}
       <LocationSection settings={settings} />

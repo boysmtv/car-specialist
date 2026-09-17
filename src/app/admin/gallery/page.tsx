@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { seedGallery } from "@/data/seed";
 import { toast } from "sonner";
 import { Plus, Trash2, Upload } from "lucide-react";
 import type { GalleryItem } from "@/types";
@@ -31,7 +30,7 @@ export default function GalleryAdmin() {
     ]);
     const ids = new Set<string>();
     const out: GalleryItem[] = [];
-    for (const x of [...api, ...local, ...seedGallery]) {
+    for (const x of [...api, ...local]) {
       if (!ids.has(x.id)) { ids.add(x.id); out.push(x); }
     }
     setItems(out);

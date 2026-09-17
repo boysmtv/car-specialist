@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import { seedServices } from "@/data/seed";
 import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
@@ -27,7 +26,7 @@ function saveLocal(items: Service[]) {
 function merged(api: Service[], local: Service[]): Service[] {
   const ids = new Set<string>();
   const out: Service[] = [];
-  for (const x of [...api, ...local, ...seedServices]) {
+  for (const x of [...api, ...local]) {
     if (!ids.has(x.id)) { ids.add(x.id); out.push(x); }
   }
   return out;

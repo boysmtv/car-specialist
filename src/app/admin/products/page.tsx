@@ -2,19 +2,28 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Plus, Search, Pencil, Trash2, PackageSearch } from "lucide-react";
-import { seedProducts } from "@/data/seed";
 import type { Product } from "@/types";
 import { availabilityColor, availabilityLabel, priceLabel } from "@/lib/utils";
 
 export default function ProductsAdmin() {
-  const [items, setItems] = useState<Product[]>(seedProducts);
+  const [items, setItems] = useState<Product[]>([]);
   const [q, setQ] = useState("");
   useEffect(() => {
-    try {
-      const extra = JSON.parse(localStorage.getItem("demo_products") || "[]");
-      const trash = JSON.parse(localStorage.getItem("demo_trash") || "[]");
-      setItems([...extra, ...seedProducts].filter((x) => !trash.includes(x.id)));
-    } catch {}
+    (async () => {
+      try {
+        const r = await fetch("/api/demo?entity=products", { cache: "no-store" });
+        const j = await r.json();
+        const api: Product[] = j.success ? j.data : [];
+        const extra: Product[] = JSON.parse(localStorage.getItem("demo_products") || "[]");
+        const trash: string[] = JSON.parse(localStorage.getItem("demo_trash") || "[]");
+        const ids = new Set<string>();
+        const out: Product[] = [];
+        for (const x of [...api, ...extra]) {
+          if (!trash.includes(x.id) && !ids.has(x.id)) { ids.add(x.id); out.push(x); }
+        }
+        setItems(out);
+      } catch {}
+    })();
   }, []);
   const filtered = useMemo(() => items.filter((x) => (x.name + (x.brand || "")).toLowerCase().includes(q.toLowerCase())), [items, q]);
 
