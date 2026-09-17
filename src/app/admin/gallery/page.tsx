@@ -98,6 +98,7 @@ export default function GalleryAdmin() {
             }
           }
         }
+      }
       toast.success("Foto tersimpan & langsung tampil di galeri.");
     } catch (e) {
       toast.error((e as Error).message || "Gagal menyimpan.");

@@ -41,7 +41,7 @@ export default async function HomePage() {
               <span>📞 {settings.phone}</span>
             </div>
             <div className="mt-6 grid max-w-md grid-cols-3 gap-2">
-              {[{ v: "7", l: "Layanan inti" }, { v: "16+", l: "Produk katalog" }, { v: "WA", l: "Fast respon" }].map((s) => (
+              {[{ v: String(services.length), l: "Layanan" }, { v: String(prod.total), l: "Produk" }, { v: "WA", l: "Fast respon" }].map((s) => (
                 <div key={s.l} className="rounded-xl border border-orange-100 bg-white px-3 py-2.5 text-center shadow-sm">
                   <b className="gold-text block text-xl">{s.v}</b>
                   <span className="text-[11px] text-slate-500">{s.l}</span>
