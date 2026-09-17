@@ -9,8 +9,7 @@ npm install
 cp .env.example .env.local
 npm run dev
 # buka http://localhost:3000
-# admin: http://localhost:3000/admin/login
-#   email: admin@specialist-ac.local / password: admin123
+# admin: http://localhost:3000/admin/login (akun Supabase, tanpa Supabase tidak bisa login)
 ```
 
 Tanpa env Supabase, website berjalan mode lokal (data admin tersimpan di server dev). Dengan env terisi, katalog dibaca dari database.

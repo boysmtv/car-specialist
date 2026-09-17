@@ -79,23 +79,23 @@ export function isAuthenticated(store?: Store | null): boolean {
 }
 
 export async function loginAdmin(email: string, password: string): Promise<{ ok: boolean; msg?: string }> {
-  // Coba Supabase dulu (token Supabase dikelola SDK-nya sendiri)
+  // HANYA Supabase. Tidak ada lagi akun demo — kredensial demo yang dulu
+  // tertulis di kode tidak boleh bisa dipakai login ke mana pun.
+  let sb: ReturnType<typeof import("@/lib/supabase/client").createClient> = null;
   try {
     const { createClient } = await import("@/lib/supabase/client");
-    const sb = createClient();
-    if (sb) {
-      const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (!error) {
-        setSession(email);
-        return { ok: true };
-      }
-    }
+    sb = createClient();
   } catch {}
-  // Fallback demo lokal
-  if (email === "admin@specialist-ac.local" && password === "admin123") {
-    const sess = setSession(email);
-    if (!sess) return { ok: false, msg: "Browser memblokir penyimpanan sesi" };
-    return { ok: true };
+  if (!sb) {
+    return { ok: false, msg: "Server belum terhubung Supabase. Hubungi pemilik web." };
   }
-  return { ok: false, msg: "Email/password salah (demo: admin@specialist-ac.local / admin123)" };
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) return { ok: false, msg: "Email/password salah." };
+  } catch {
+    return { ok: false, msg: "Tidak bisa menghubungi server login. Coba lagi." };
+  }
+  const sess = setSession(email);
+  if (!sess) return { ok: false, msg: "Browser memblokir penyimpanan sesi." };
+  return { ok: true };
 }

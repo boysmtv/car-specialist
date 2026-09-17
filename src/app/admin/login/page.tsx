@@ -7,8 +7,8 @@ import { toast } from "sonner";
 function Form() {
   const router = useRouter();
   const sp = useSearchParams();
-  const [email, setEmail] = useState("admin@specialist-ac.local");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Sesi masih berlaku → langsung masuk, tidak perlu login lagi
@@ -38,7 +38,7 @@ function Form() {
           <div><label className="label">Password</label><input type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
           <button disabled={loading} className="btn-primary">{loading ? "Masuk…" : "Login"}</button>
         </form>
-        <p className="mt-3 text-xs text-slate-500">Demo lokal: admin@specialist-ac.local / admin123. Production: user Supabase (nonaktifkan sign-up publik).</p>
+        <p className="mt-3 text-xs text-slate-500">Khusus pemilik. Akun dibuat di Supabase → Authentication → Users.</p>
       </div>
     </div>
   );

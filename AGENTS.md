@@ -62,7 +62,7 @@ Tidak ada lagi seed mock untuk produk/layanan/galeri.
 
 ## 6. Auth admin
 
-- Login Supabase-first (`src/lib/auth.ts` + `src/lib/supabase/client.ts`), fallback demo lokal `admin@specialist-ac.local / admin123`.
+- Login HANYA akun Supabase (`src/lib/auth.ts`). Tidak ada akun demo — jangan pernah menambahkannya lagi.
 - Sesi demo = token acak, expiry 30 menit, divalidasi tiap baca + cek berkala 30 detik. Sidebar menampilkan badge hijau (Supabase) / kuning (Demo).
 - Di Vercel WAJIB login akun Supabase (buat di Auth → Users, centang Auto Confirm) + migrasi 0001→0002→0003.
 
