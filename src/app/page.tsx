@@ -3,7 +3,6 @@ import { CalendarCheck, MessageCircle, ShieldCheck, ClipboardCheck, MessagesSqua
 import { getProducts, getServices, getSettings, getGallery } from "@/lib/data";
 import ServiceCard from "@/components/marketing/ServiceCard";
 import ProductCard from "@/components/marketing/ProductCard";
-import ProblemFinder from "@/components/marketing/ProblemFinder";
 import { waLink } from "@/lib/whatsapp";
 import LocationSection from "@/components/marketing/LocationSection";
 import { mapsSearchUrl } from "@/lib/maps";
@@ -70,8 +69,6 @@ export default async function HomePage() {
           {services.slice(0, 6).map((s) => <ServiceCard key={s.id} s={s} />)}
         </div>
       </section>
-
-      <ProblemFinder />
 
       {/* HOME SERVICE — pita full-bleed */}
       <section className="border-y border-orange-100 bg-gradient-to-b from-orange-100/70 to-orange-50/40">

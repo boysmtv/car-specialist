@@ -16,9 +16,10 @@ export default function SettingsAdmin() {
     toast.success("Pengaturan disimpan (demo lokal). Di production tersimpan ke site_settings.");
   }
   return (
-    <div className="max-w-xl">
-      <h1 className="text-2xl font-extrabold">Settings</h1>
-      <div className="card mt-3 grid gap-3 p-5">
+    <div>
+      <h1 className="text-2xl font-black tracking-tight text-slate-900">Pengaturan</h1>
+      <p className="mt-0.5 text-sm text-slate-500">Nomor WhatsApp, alamat & jam tampil di seluruh website.</p>
+      <div className="card-luxe mt-3 grid max-w-2xl gap-3 p-4 sm:p-5">
         <div><label className="label">WhatsApp (format 62…)</label><input className="input" value={wa} onChange={(e) => setWa(e.target.value)} /></div>
         <div><label className="label">Alamat</label><input className="input" value={addr} onChange={(e) => setAddr(e.target.value)} /></div>
         <div><label className="label">Jam operasional</label><p className="text-xs text-slate-500">Senin–Jumat 08:00–17:00, Sabtu 08:00–15:00, Minggu Tutup (edit di Supabase site_settings.opening_hours untuk production).</p></div>

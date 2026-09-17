@@ -9,6 +9,7 @@ export const productSchema = z.object({
   part_number: z.string().optional(),
   short_description: z.string().optional(),
   description: z.string().optional(),
+  warranty_text: z.string().optional(),
   price_mode: z.enum(["FIXED", "START_FROM", "RANGE", "CONTACT"]),
   price: z.coerce.number().optional(),
   price_min: z.coerce.number().optional(),

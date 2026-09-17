@@ -91,7 +91,7 @@ export default function GalleryAdmin() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <h1 className="text-2xl font-black tracking-tight text-slate-900">Galeri ({items.length})</h1>
       <p className="mt-0.5 text-sm text-slate-500">Yang ditambah di sini langsung tampil di halaman Galeri.</p>
       <div className="card-luxe mt-3 grid gap-2 p-4">
@@ -111,7 +111,7 @@ export default function GalleryAdmin() {
         )}
         <button onClick={add} className="btn-gold !py-2 text-xs w-fit"><Plus size={15} /> Tambah & Tampilkan</button>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((g) => (
           <div key={g.id} className="card-luxe group relative overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
