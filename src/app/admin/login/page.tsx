@@ -1,7 +1,7 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
-import { loginAdmin } from "@/lib/auth";
+import { useEffect, useState, Suspense } from "react";
+import { getSession, loginAdmin } from "@/lib/auth";
 import { toast } from "sonner";
 
 function Form() {
@@ -10,6 +10,13 @@ function Form() {
   const [email, setEmail] = useState("admin@specialist-ac.local");
   const [password, setPassword] = useState("admin123");
   const [loading, setLoading] = useState(false);
+
+  // Sesi masih berlaku → langsung masuk, tidak perlu login lagi
+  useEffect(() => {
+    if (getSession()) {
+      router.replace(sp.get("redirect") || "/admin/dashboard");
+    }
+  }, [router, sp]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

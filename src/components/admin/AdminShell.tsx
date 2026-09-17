@@ -27,18 +27,32 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (path === "/admin/login") { setReady(true); return; }
-    const s = getSession();
-    if (!s) router.replace(`/admin/login?redirect=${encodeURIComponent(path || "/admin/dashboard")}`);
-    else {
-      setEmail(s.email);
-      setReady(true);
-      // Cek apakah ada sesi Supabase asli (bisa tulis database) atau cuma demo lokal
-      import("@/lib/supabase/client").then(({ createClient }) => {
-        createClient()?.auth.getSession().then(({ data }) => {
-          setCloudSession(!!data.session);
-        }).catch(() => setCloudSession(false));
+    const redirect = `/admin/login?redirect=${encodeURIComponent(path || "/admin/dashboard")}`;
+    const check = () => {
+      const s = getSession();
+      if (!s) {
+        setReady(false);
+        router.replace(redirect);
+      } else {
+        setEmail(s.email);
+        setReady(true);
+      }
+    };
+    check();
+    // Cek apakah ada sesi Supabase asli (bisa tulis database) atau cuma demo lokal
+    import("@/lib/supabase/client").then(({ createClient }) => {
+      createClient()?.auth.getSession().then(({ data }) => {
+        setCloudSession(!!data.session);
       }).catch(() => setCloudSession(false));
-    }
+    }).catch(() => setCloudSession(false));
+    // Lawan tombol back: browser bisa restore halaman dari cache tanpa reload
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) check(); };
+    window.addEventListener("pageshow", onShow);
+    window.addEventListener("focus", check);
+    return () => {
+      window.removeEventListener("pageshow", onShow);
+      window.removeEventListener("focus", check);
+    };
   }, [path, router]);
 
   if (path === "/admin/login") return <>{children}</>;
@@ -89,7 +103,12 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </p>
           )}
           <button
-            onClick={() => { clearSession(); router.replace("/admin/login"); }}
+            onClick={() => {
+              clearSession();
+              import("@/lib/supabase/client").then(({ createClient }) => {
+                createClient()?.auth.signOut().catch(() => {}).finally(() => router.replace("/admin/login"));
+              }).catch(() => router.replace("/admin/login"));
+            }}
             className="mt-1 inline-flex items-center gap-1 font-semibold text-red-600 hover:underline"
           >
             <LogOut size={13} /> Keluar
