@@ -49,9 +49,9 @@ export default async function HomePage() {
               ))}
             </div>
           </div>
-          {/* Visual full-bleed ke tepi kanan layar (desktop) */}
-          <div className="lg:-mr-[max(1.5rem,calc((100vw-80rem)/2))]">
-            <div className="relative overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-xl lg:rounded-r-none">
+          {/* Visual sejajar konten */}
+          <div>
+            <div className="relative overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-xl">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?auto=format&fit=crop&w=1100&q=70" alt="Bengkel Specialist AC Mobil" className="aspect-[4/3] w-full object-cover lg:aspect-auto lg:h-[500px]" />
               <span className="badge-gold absolute left-3 top-3 shadow">● Buka Senin–Sabtu</span>

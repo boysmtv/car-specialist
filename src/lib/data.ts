@@ -1,5 +1,6 @@
 import { seedCategories, seedFaq, seedGallery, seedProducts, seedServices, seedSettings } from "@/data/seed";
-import { getDemoItems } from "@/lib/demoStore";
+import { getDemoItems, getDemoSettings } from "@/lib/demoStore";
+import { isServerSupabaseConfigured } from "@/lib/supabase/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { Category, Faq, GalleryItem, Product, Service, SiteSettings } from "@/types";
 
@@ -147,7 +148,7 @@ export async function getFaqs(): Promise<Faq[]> {
 }
 
 export async function getSettings(): Promise<SiteSettings> {
-  return trySupabase(async (sb) => {
+  const base = await trySupabase(async (sb) => {
     const { data } = await sb.from("site_settings").select("*").limit(1).single();
     if (!data) return seedSettings;
     return {
@@ -157,6 +158,15 @@ export async function getSettings(): Promise<SiteSettings> {
       social_links: (data as { social_links?: Record<string, string> }).social_links ?? seedSettings.social_links,
     };
   }, seedSettings);
+  // Tanpa Supabase: perubahan dari /admin/settings (WA, alamat) dipakai semua halaman
+  if (!isServerSupabaseConfigured()) {
+    try {
+      const demo = await getDemoSettings<Partial<SiteSettings>>();
+      const clean = Object.fromEntries(Object.entries(demo).filter(([, v]) => v !== undefined && v !== "")) as Partial<SiteSettings>;
+      if (Object.keys(clean).length > 0) return { ...base, ...clean };
+    } catch {}
+  }
+  return base;
 }
 
 export async function getBrands(): Promise<string[]> {

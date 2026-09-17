@@ -5,6 +5,7 @@ import { slugify } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, X } from "lucide-react";
 import type { Service } from "@/types";
+import { SERVICE_ICONS } from "@/components/marketing/ServiceIcon";
 
 const LS = "demo_services";
 const DEFAULT_PROCESS = "Konsultasi via WhatsApp\nPemeriksaan\nEstimasi\nPengerjaan";
@@ -38,6 +39,7 @@ interface FormState {
   editId: string | null;
   editSlug: string;
   name: string;
+  icon: string;
   short: string;
   desc: string;
   symptoms: string;
@@ -47,7 +49,7 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  editId: null, editSlug: "", name: "", short: "", desc: "",
+  editId: null, editSlug: "", name: "", icon: "wrench", short: "", desc: "",
   symptoms: "", diagnostics: "", process: DEFAULT_PROCESS, duration: "",
 };
 
@@ -74,7 +76,7 @@ export default function ServicesAdmin() {
 
   function startEdit(s: Service) {
     setForm({
-      editId: s.id, editSlug: s.slug, name: s.name,
+      editId: s.id, editSlug: s.slug, name: s.name, icon: s.icon || "wrench",
       short: s.short_description, desc: s.description,
       symptoms: s.symptoms.join("\n"), diagnostics: s.diagnostics.join("\n"),
       process: s.process.join("\n"), duration: s.duration_text || "",
@@ -91,6 +93,7 @@ export default function ServicesAdmin() {
       id: form.editId || `demo-svc-${Date.now()}`,
       name: form.name.trim(),
       slug: isEdit ? form.editSlug : slugify(form.name),
+      icon: form.icon,
       short_description: form.short.trim(),
       description: form.desc.trim() || form.short.trim(),
       symptoms: lines(form.symptoms),
@@ -158,6 +161,20 @@ export default function ServicesAdmin() {
           <div className="grid gap-3 lg:grid-cols-2">
             <div><label className="label">Nama layanan*</label><input value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="cth: Cuci Evaporator" className="input" /></div>
             <div><label className="label">Estimasi waktu</label><input value={form.duration} onChange={(e) => set("duration", e.target.value)} placeholder="cth: 1–2 jam" className="input" /></div>
+          </div>
+          <div>
+            <span className="label">Icon*</span>
+            <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-10">
+              {SERVICE_ICONS.map((ic) => (
+                <button
+                  key={ic.value} type="button" title={ic.label}
+                  onClick={() => set("icon", ic.value)}
+                  className={`grid aspect-square place-items-center rounded-xl border-2 transition ${form.icon === ic.value ? "border-primary bg-orange-100 text-primary" : "border-border bg-white text-slate-400 hover:border-orange-200"}`}
+                >
+                  {ic.node}
+                </button>
+              ))}
+            </div>
           </div>
           <div><label className="label">Deskripsi singkat* (tampil di kartu)</label><textarea value={form.short} onChange={(e) => set("short", e.target.value)} rows={2} className="input" /></div>
           <div><label className="label">Deskripsi lengkap (tampil di halaman detail)</label><textarea value={form.desc} onChange={(e) => set("desc", e.target.value)} rows={3} className="input" placeholder="Kosongkan = pakai deskripsi singkat" /></div>

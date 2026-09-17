@@ -78,6 +78,7 @@ export interface Service {
   price_to?: number | null;
   warranty_text?: string | null;
   image_url?: string | null;
+  icon?: string | null;
   featured: boolean;
   active: boolean;
 }

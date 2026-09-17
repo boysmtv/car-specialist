@@ -7,13 +7,35 @@ export default function SettingsAdmin() {
   const [wa, setWa] = useState(seedSettings.whatsapp);
   const [addr, setAddr] = useState(seedSettings.address);
   useEffect(() => {
-    setWa(localStorage.getItem("site_whatsapp") || seedSettings.whatsapp);
-    setAddr(localStorage.getItem("site_address") || seedSettings.address);
+    (async () => {
+      try {
+        const r = await fetch("/api/demo?entity=settings", { cache: "no-store" });
+        const j = await r.json();
+        if (j.success && j.data) {
+          if (j.data.whatsapp) setWa(j.data.whatsapp);
+          if (j.data.address) setAddr(j.data.address);
+          return;
+        }
+      } catch {}
+      setWa(localStorage.getItem("site_whatsapp") || seedSettings.whatsapp);
+      setAddr(localStorage.getItem("site_address") || seedSettings.address);
+    })();
   }, []);
-  function save() {
-    localStorage.setItem("site_whatsapp", wa);
-    localStorage.setItem("site_address", addr);
-    toast.success("Pengaturan disimpan (demo lokal). Di production tersimpan ke site_settings.");
+  async function save() {
+    try {
+      const r = await fetch("/api/demo", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entity: "settings", item: { whatsapp: wa.trim(), phone: wa.trim().replace(/^62/, "0"), address: addr.trim() } }),
+      });
+      if (!r.ok) throw new Error();
+      toast.success("Tersimpan & langsung tampil di semua halaman website.");
+    } catch {
+      toast.success("Tersimpan lokal (server tidak bisa ditulis).");
+    }
+    try {
+      localStorage.setItem("site_whatsapp", wa);
+      localStorage.setItem("site_address", addr);
+    } catch {}
   }
   return (
     <div>

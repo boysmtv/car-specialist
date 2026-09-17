@@ -1,13 +1,12 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, MessageCircle, MessagesSquare, MapPin } from "lucide-react";
+import { Menu, X, MessageCircle, MessagesSquare } from "lucide-react";
 import { navLinks } from "@/config/site";
 import { waLink } from "@/lib/whatsapp";
 import { mapsSearchUrl } from "@/lib/maps";
-import { siteDefaults } from "@/config/site";
 
-export default function Navbar({ businessName, whatsapp }: { businessName: string; whatsapp: string }) {
+export default function Navbar({ businessName, whatsapp, address }: { businessName: string; whatsapp: string; address: string }) {
   const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40">
@@ -48,8 +47,8 @@ export default function Navbar({ businessName, whatsapp }: { businessName: strin
                   {l.label}
                 </Link>
               ))}
-              <a href={mapsSearchUrl(siteDefaults.address)} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2.5 text-sm font-semibold text-primary">
-                📍 Cikarang Barat — Buka Maps
+              <a href={mapsSearchUrl(address)} target="_blank" rel="noreferrer" className="rounded-lg px-3 py-2.5 text-sm font-semibold text-primary">
+                📍 Lokasi Bengkel — Buka Maps
               </a>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <a href={waLink("Halo, saya ingin bertanya.", whatsapp)} target="_blank" rel="noreferrer" className="btn-wa">WhatsApp</a>

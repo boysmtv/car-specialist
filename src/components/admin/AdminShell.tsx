@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   LayoutDashboard, Package, Wrench, Image as ImageIcon, Settings,
-  LogOut, Menu, X, ExternalLink,
+  LogOut, Menu, X,
 } from "lucide-react";
 import { adminNav } from "@/config/site";
 import { clearSession, getSession } from "@/lib/auth";
@@ -71,9 +71,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         })}
       </nav>
       <div className="mt-auto grid gap-2 pt-6">
-        <a href="/" target="_blank" rel="noreferrer" className="btn-outline w-full !py-2 !text-xs">
-          <ExternalLink size={14} /> Lihat Website
-        </a>
         <div className="rounded-xl bg-orange-50 px-3 py-2.5 text-xs">
           <p className="truncate font-semibold text-slate-700">{email}</p>
           <button
@@ -103,9 +100,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               {open ? <X size={16} /> : <Menu size={16} />}
             </button>
             <b className="text-sm text-slate-800">Panel Admin</b>
-            <a href="/" target="_blank" rel="noreferrer" className="ml-auto hidden items-center gap-1 text-xs font-semibold text-primary hover:underline sm:inline-flex">
-              <ExternalLink size={13} /> Lihat Website
-            </a>
           </div>
           <div className="mx-auto w-full max-w-[1400px] p-4 sm:p-6 lg:p-8">{children}</div>
         </div>

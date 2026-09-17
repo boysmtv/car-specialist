@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { Package, Wrench, Image as ImageIcon, Settings, ArrowRight, Rocket } from "lucide-react";
+import { Package, Wrench, Image as ImageIcon, Settings, ArrowRight } from "lucide-react";
 
 const CARDS = [
   { l: "Produk", d: "Kelola katalog jualan", v: "16+", href: "/admin/products", icon: <Package size={22} /> },
@@ -17,7 +17,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-black tracking-tight text-slate-900">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500">Fokus jualan: produk, layanan & galeri. Chat masuk langsung via WhatsApp.</p>
         </div>
-        <a href="/" target="_blank" rel="noreferrer" className="btn-gold !py-2 text-xs"><Rocket size={14} /> Buka Website</a>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((c) => (
@@ -31,15 +30,6 @@ export default function Dashboard() {
             <ArrowRight size={18} className="shrink-0 text-slate-300 transition group-hover:translate-x-1 group-hover:text-primary" />
           </Link>
         ))}
-      </div>
-      <div className="card-luxe mt-4 border-orange-200 bg-gradient-to-b from-orange-50 to-white p-5 text-sm text-slate-600">
-        <b className="text-slate-900">Setup awal (Production)</b>
-        <ol className="mt-2 list-decimal space-y-1 pl-5">
-          <li>Buat project Supabase → jalankan <code className="rounded bg-white px-1 text-xs">supabase/migrations/0001_init.sql</code></li>
-          <li>Nonaktifkan public sign-up, buat admin manual</li>
-          <li>Isi env di Vercel (lihat .env.example) — pastikan nomor WA benar</li>
-          <li>Lengkapi produk, layanan & galeri dari menu di samping</li>
-        </ol>
       </div>
     </div>
   );

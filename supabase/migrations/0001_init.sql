@@ -51,7 +51,7 @@ create table if not exists services (
   short_description text, description text,
   symptoms jsonb default '[]', diagnostics jsonb default '[]', process jsonb default '[]',
   duration_text varchar, price_mode varchar default 'CONTACT', price_from numeric, price_to numeric,
-  warranty_text text, image_url text, featured boolean default false, active boolean default true,
+  warranty_text text, image_url text, icon varchar, featured boolean default false, active boolean default true,
   seo_title varchar, seo_description text,
   created_at timestamptz default now(), updated_at timestamptz default now(), deleted_at timestamptz
 );

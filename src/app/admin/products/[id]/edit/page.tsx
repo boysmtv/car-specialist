@@ -34,10 +34,8 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
   const [availability, setAvailability] = useState("AVAILABLE");
   const [priceMode, setPriceMode] = useState("START_FROM");
   const [price, setPrice] = useState("");
-  const [priceMax, setPriceMax] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [desc, setDesc] = useState("");
-  const [partNumber, setPartNumber] = useState("");
   const [warranty, setWarranty] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [urlInput, setUrlInput] = useState("");
@@ -50,11 +48,10 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
         setItem(found);
         setName(found.name); setSlug(found.slug); setBrand(found.brand || "");
         setCategoryId(found.category_id); setAvailability(found.availability);
-        setPriceMode(found.price_mode);
+        setPriceMode(found.price_mode === "RANGE" ? "START_FROM" : found.price_mode);
         setPrice(String(found.price ?? found.price_min ?? ""));
-        setPriceMax(String(found.price_max ?? ""));
         setShortDesc(found.short_description || ""); setDesc(found.description || "");
-        setPartNumber(found.part_number || ""); setWarranty(found.warranty_text || "");
+        setWarranty(found.warranty_text || "");
         setImages((found.images || []).sort((a, b) => a.sort_order - b.sort_order).map((i) => i.url));
       } else {
         const seed = seedProducts.find((x) => x.id === id || x.slug === id);
@@ -101,21 +98,19 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
     if (name.trim().length < 3) { toast.error("Nama minimal 3 karakter"); return; }
     if (images.length === 0) { toast.error("Minimal 1 foto"); return; }
     const p = price ? Number(price) : undefined;
-    const pm = priceMax ? Number(priceMax) : undefined;
     if (priceMode === "FIXED" && !p) { toast.error("Harga wajib untuk mode FIXED"); return; }
     const cat = seedCategories.find((c) => c.id === categoryId);
     const next: Product = {
-      ...item, name: name.trim(), slug: slugify(slug || name),
+      ...item, name: name.trim(), slug: item.slug,
       brand: brand.trim() || null, category_id: categoryId,
       category_name: cat?.name, category_slug: cat?.slug,
       availability: availability as Product["availability"],
       price_mode: priceMode as Product["price_mode"],
       price: priceMode === "FIXED" ? (p ?? null) : null,
-      price_min: priceMode === "FIXED" || priceMode === "CONTACT" ? null : (p ?? null),
-      price_max: priceMode === "RANGE" ? (pm ?? null) : null,
+      price_min: priceMode === "START_FROM" ? (p ?? null) : null,
+      price_max: null,
       short_description: shortDesc.trim() || null,
       description: desc.trim() || null,
-      part_number: partNumber.trim() || null,
       warranty_text: warranty.trim() || null,
       images: images.map((url, i) => ({ id: `${item.id}-${i}-${Date.now()}`, product_id: item.id, url, alt_text: name.trim(), sort_order: i + 1, is_cover: i === 0 })),
     };
@@ -162,25 +157,18 @@ export default function EditProduct({ params }: { params: Promise<{ id: string }
       <div className="mt-3 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
         <div className="card-luxe grid gap-3 p-4 sm:p-5">
           <div><label className="label">Nama*</label><input value={name} onChange={(e) => setName(e.target.value)} className="input" /></div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Slug</label><input value={slug} onChange={(e) => setSlug(e.target.value)} className="input" /></div>
-            <div><label className="label">Brand</label><input value={brand} onChange={(e) => setBrand(e.target.value)} className="input" /></div>
-          </div>
+          <div><label className="label">Brand</label><input value={brand} onChange={(e) => setBrand(e.target.value)} className="input" /></div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div><label className="label">Kategori*</label><select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className="input">{seedCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
             <div><label className="label">Ketersediaan*</label><select value={availability} onChange={(e) => setAvailability(e.target.value)} className="input"><option value="AVAILABLE">Tersedia</option><option value="LOW_STOCK">Stok Terbatas</option><option value="PREORDER">Pre-order</option><option value="OUT_OF_STOCK">Habis</option><option value="CONTACT">Tanya Stok</option></select></div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div><label className="label">Mode harga*</label><select value={priceMode} onChange={(e) => setPriceMode(e.target.value)} className="input"><option value="FIXED">FIXED (pas)</option><option value="START_FROM">START_FROM</option><option value="RANGE">RANGE</option><option value="CONTACT">CONTACT (tanya)</option></select></div>
-            <div><label className="label">Harga / mulai</label><input value={price} onChange={(e) => setPrice(e.target.value)} type="number" inputMode="numeric" className="input" /></div>
-            <div><label className="label">Harga maks (RANGE)</label><input value={priceMax} onChange={(e) => setPriceMax(e.target.value)} type="number" inputMode="numeric" className="input" /></div>
+            <div><label className="label">Mode harga*</label><select value={priceMode} onChange={(e) => setPriceMode(e.target.value)} className="input"><option value="FIXED">Harga pas</option><option value="START_FROM">Mulai dari</option><option value="CONTACT">Tanya via WA</option></select></div>
+            <div className="sm:col-span-2"><label className="label">Harga (Rp)</label><input value={price} onChange={(e) => setPrice(e.target.value)} type="number" inputMode="numeric" className="input" /></div>
           </div>
           <div><label className="label">Deskripsi singkat</label><input value={shortDesc} onChange={(e) => setShortDesc(e.target.value)} className="input" /></div>
           <div><label className="label">Deskripsi lengkap</label><textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={4} className="input" /></div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Part number</label><input value={partNumber} onChange={(e) => setPartNumber(e.target.value)} className="input" /></div>
-            <div><label className="label">Garansi</label><input value={warranty} onChange={(e) => setWarranty(e.target.value)} className="input" /></div>
-          </div>
+          <div><label className="label">Garansi</label><input value={warranty} onChange={(e) => setWarranty(e.target.value)} className="input" /></div>
         </div>
         <div className="card-luxe grid gap-2 p-4 lg:sticky lg:top-20">
           <b className="text-sm">Foto produk ({images.length}/6)</b>

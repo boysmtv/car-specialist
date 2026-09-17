@@ -47,12 +47,10 @@ export default function NewProduct() {
   function onSubmit(v: F) {
     if (images.length === 0) { toast.error("Upload minimal 1 foto cover sebelum Publish"); return; }
     if (v.price_mode === "FIXED" && !v.price) { toast.error("Harga wajib untuk mode FIXED"); return; }
-    if (v.price_mode === "RANGE" && !(v.price && v.price_max)) { toast.error("RANGE butuh harga mulai & harga maks"); return; }
-    const finalSlug = v.slug || slugify(v.name);
+    const finalSlug = slugify(v.name);
     const { slug: _omit, active: _a, ...rest } = v;
-    // Normalisasi agar label harga tampil benar di katalog:
-    // START_FROM/RANGE memakai price_min sebagai batas bawah.
-    const price_min = v.price_mode === "FIXED" || v.price_mode === "CONTACT" ? undefined : (v.price_min ?? v.price ?? undefined);
+    // START_FROM memakai price_min sebagai batas bawah.
+    const price_min = v.price_mode === "START_FROM" ? (v.price ?? undefined) : undefined;
     const cat = seedCategories.find((c) => c.id === v.category_id);
     const pid = `demo-${Date.now()}`;
     const item = {
@@ -85,29 +83,19 @@ export default function NewProduct() {
       <p className="mt-0.5 text-sm text-slate-500">Foto pertama = cover. Langsung tampil di katalog setelah Publish.</p>
       <form onSubmit={handleSubmit(onSubmit)} className="mt-3 grid items-start gap-4 lg:grid-cols-[1fr_320px]">
         <div className="card-luxe grid gap-3 p-4 sm:p-5">
-          <div><label className="label">Nama*</label><input className="input" {...register("name")} onChange={(e) => { setValue("name", e.target.value); if (!watch("slug")) setValue("slug", slugify(e.target.value)); }} />{errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}</div>
+          <div><label className="label">Nama*</label><input className="input" {...register("name")} onChange={(e) => { setValue("name", e.target.value); setValue("slug", slugify(e.target.value)); }} />{errors.name && <p className="text-xs text-red-600">{errors.name.message}</p>}</div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Slug*</label><input className="input" {...register("slug")} placeholder={slugify(name || "nama-produk")} /></div>
             <div><label className="label">Brand</label><input className="input" placeholder="cth: Denso" {...register("brand")} /></div>
+            <div><label className="label">Kategori*</label><select className="input" {...register("category_id")}>{seedCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Kategori*</label><select className="input" {...register("category_id")}>{seedCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
             <div><label className="label">Ketersediaan*</label><select className="input" {...register("availability")}><option value="AVAILABLE">Tersedia</option><option value="LOW_STOCK">Stok Terbatas</option><option value="PREORDER">Pre-order</option><option value="OUT_OF_STOCK">Habis</option><option value="CONTACT">Tanya Stok</option></select></div>
+            <div><label className="label">Mode harga*</label><select className="input" {...register("price_mode")}><option value="FIXED">Harga pas</option><option value="START_FROM">Mulai dari</option><option value="CONTACT">Tanya via WA</option></select></div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div><label className="label">Mode harga*</label><select className="input" {...register("price_mode")}><option value="FIXED">FIXED (pas)</option><option value="START_FROM">START_FROM</option><option value="RANGE">RANGE</option><option value="CONTACT">CONTACT (tanya)</option></select></div>
-            <div><label className="label">Harga / mulai</label><input type="number" inputMode="numeric" className="input" {...register("price")} /></div>
-            <div><label className="label">Harga maks (RANGE)</label><input type="number" inputMode="numeric" className="input" {...register("price_max")} /></div>
-          </div>
-          {priceMode !== "FIXED" && priceMode !== "CONTACT" && (
-            <p className="-mt-1 text-xs text-slate-500">Mode {priceMode} memakai kolom “Harga / mulai” sebagai batas bawah.</p>
-          )}
+          <div><label className="label">Harga (Rp){priceMode === "START_FROM" ? " — sebagai \"mulai dari\"" : ""}</label><input type="number" inputMode="numeric" placeholder={priceMode === "CONTACT" ? "Tidak perlu diisi" : "cth: 350000"} className="input" {...register("price")} /></div>
           <div><label className="label">Deskripsi singkat</label><input className="input" placeholder="Satu baris untuk kartu produk" {...register("short_description")} /></div>
           <div><label className="label">Deskripsi lengkap</label><textarea className="input" rows={4} placeholder="Detail produk, kompatibilitas, info pemasangan…" {...register("description")} /></div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div><label className="label">Part number</label><input className="input" {...register("part_number")} /></div>
-            <div><label className="label">Garansi</label><input className="input" placeholder="cth: 3 bulan" {...register("warranty_text")} /></div>
-          </div>
+          <div><label className="label">Garansi</label><input className="input" placeholder="cth: 3 bulan" {...register("warranty_text")} /></div>
         </div>
 
         <div className="card-luxe grid gap-2 p-4 lg:sticky lg:top-20">

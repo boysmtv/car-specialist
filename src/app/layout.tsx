@@ -26,7 +26,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="id">
       <body>
-        <Navbar businessName={settings.business_name} whatsapp={settings.whatsapp} />
+        <Navbar businessName={settings.business_name} whatsapp={settings.whatsapp} address={settings.address} />
         <main className="min-h-[60vh]">{children}</main>
         <Footer settings={settings} />
         <MobileCTA whatsapp={settings.whatsapp} />

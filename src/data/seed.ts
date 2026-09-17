@@ -15,7 +15,7 @@ export const seedCategories: Category[] = [
 
 export const seedServices: Service[] = [
   {
-    id: "s-ac", name: "Service AC Mobil", slug: "service-ac-mobil",
+    id: "s-ac", icon: "snowflake", name: "Service AC Mobil", slug: "service-ac-mobil",
     short_description: "Pemeriksaan dan perbaikan sistem AC mobil dari pendinginan, blower, hingga komponen AC.",
     description: "Layanan lengkap sistem AC: general check, servis, cleaning evaporator, isi freon, leak check, pemeriksaan kompresor, kondensor, blower, magnetic clutch, thermostat, cabin filter, expansion valve, dan kelistrikan AC. Teknisi melakukan pemeriksaan terlebih dahulu, memberikan estimasi sebelum pengerjaan, dan mendokumentasikan pekerjaan.",
     symptoms: ["AC tidak dingin", "AC bau", "Blower tidak keluar angin", "Angin kecil", "Kompresor berisik"],
@@ -27,7 +27,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1486262715619-67b85e0b08d3"), featured: true, active: true,
   },
   {
-    id: "s-pw", name: "Perbaikan Power Window", slug: "perbaikan-power-window",
+    id: "s-pw", icon: "car", name: "Perbaikan Power Window", slug: "perbaikan-power-window",
     short_description: "Pemeriksaan kaca elektrik yang macet, lambat, atau tidak berfungsi.",
     description: "Diagnosa power window mati, kaca lambat/tersendat, tidak naik/turun. Pemeriksaan motor, regulator, switch master & single, wiring, fuse, relay, dan mekanisme.",
     symptoms: ["Kaca mobil macet", "Power window lambat", "Kaca tidak naik", "Kaca tidak turun", "Suara kasar saat naik/turun"],
@@ -38,7 +38,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1503376780353-7e6692767b70"), featured: true, active: true,
   },
   {
-    id: "s-cl", name: "Perbaikan Central Lock", slug: "perbaikan-central-lock",
+    id: "s-cl", icon: "lock", name: "Perbaikan Central Lock", slug: "perbaikan-central-lock",
     short_description: "Diagnosa sistem central lock, actuator, remote, module, dan wiring.",
     description: "Perbaikan lock/unlock tidak serempak, remote tidak merespons, actuator lemah, modul/receiver, wiring, fuse, dan integrasi alarm bila didukung.",
     symptoms: ["Central lock tidak bekerja", "Remote tidak merespons", "Kunci tidak serempak"],
@@ -49,7 +49,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1449965408869-eaa3f722e40d"), featured: false, active: true,
   },
   {
-    id: "s-pd", name: "Power Door", slug: "power-door",
+    id: "s-pd", icon: "door", name: "Power Door", slug: "power-door",
     short_description: "Pemeriksaan dan instalasi sistem pintu elektrik sesuai dukungan kendaraan.",
     description: "Instalasi dan perbaikan power door / power back door sesuai tipe kendaraan yang didukung. Meliputi motor, modul, sensor, dan kalibrasi.",
     symptoms: ["Pintu elektrik macet", "Ingin pasang power back door"],
@@ -60,7 +60,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1493238792000-8113da705763"), featured: false, active: true,
   },
   {
-    id: "s-audio", name: "Audio Mobil", slug: "audio-mobil",
+    id: "s-audio", icon: "speaker", name: "Audio Mobil", slug: "audio-mobil",
     short_description: "Head unit, speaker, amplifier, subwoofer, wiring, dan troubleshooting audio.",
     description: "Instalasi head unit, speaker coaxial/component, tweeter, amplifier, subwoofer aktif/pasif, wiring, fuse, grounding, noise troubleshooting, dan konsultasi upgrade audio.",
     symptoms: ["Speaker mati", "Audio noise/dengung", "Head unit bermasalah", "Ingin upgrade audio"],
@@ -71,7 +71,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1470225620780-dba8ba36b745"), featured: true, active: true,
   },
   {
-    id: "s-homesvc", name: "Home Service", slug: "home-service",
+    id: "s-homesvc", icon: "house", name: "Home Service", slug: "home-service",
     short_description: "Teknisi datang ke rumah — servis AC, power window & audio tanpa ke bengkel.",
     description: "Tidak sempat ke bengkel? Teknisi kami datang ke rumah Anda untuk pemeriksaan dan pengerjaan ringan: cek & servis AC, isi freon, ganti cabin filter, perbaikan power window ringan, dan konsultasi audio. Area utama Cikarang Barat & sekitarnya (Cikarang, Cibitung, Tambun, Bekasi — konfirmasi cakupan via WhatsApp). Biaya kunjungan berlaku di luar jasa pengerjaan dan diinformasikan transparan sebelum kunjungan.",
     symptoms: ["Tidak sempat ke bengkel", "Mobil mogok / tidak bisa jalan", "Ingin servis di rumah"],
@@ -82,7 +82,7 @@ export const seedServices: Service[] = [
     image_url: img("photo-1486262715619-67b85e0b08d3"), featured: true, active: true,
   },
   {
-    id: "s-var", name: "Variasi Mobil", slug: "variasi-mobil",
+    id: "s-var", icon: "sparkles", name: "Variasi Mobil", slug: "variasi-mobil",
     short_description: "Berbagai kebutuhan aksesori dan variasi interior maupun eksterior kendaraan.",
     description: "Aksesori interior, exterior, lighting, USB charger, parkir, dan variasi lainnya. Konsultasikan kebutuhan dan kompatibilitas kendaraan Anda.",
     symptoms: ["Cari variasi mobil", "Ingin upgrade lampu", "Butuh charger & aksesori"],
