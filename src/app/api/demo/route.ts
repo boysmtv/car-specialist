@@ -52,7 +52,13 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ success: false, error: { code: "DATABASE_ERROR", message: "Gagal menyimpan (gunakan Supabase untuk production)" } }, { status: 500 });
   }
-  for (const p of PATHS[body.entity]) revalidatePath(p);
+  // Revalidate list + halaman detailnya agar tidak tersisa cache 404
+  const paths = [...PATHS[body.entity]];
+  const slug = (body.item as Record<string, unknown>).slug;
+  if (typeof slug === "string" && slug) {
+    paths.push(body.entity === "services" ? `/layanan/${slug}` : `/produk/${slug}`);
+  }
+  for (const p of paths) revalidatePath(p);
   return NextResponse.json({ success: true });
 }
 
@@ -62,11 +68,17 @@ export async function DELETE(req: Request) {
   if (!body || !valid(body.entity) || body.entity === "settings" || typeof body.id !== "string") {
     return NextResponse.json({ success: false, error: { code: "VALIDATION_ERROR", message: "entity/id invalid" } }, { status: 400 });
   }
+  let removed: Record<string, unknown> | null = null;
   try {
-    await deleteDemoItem(body.entity, body.id);
+    removed = await deleteDemoItem(body.entity, body.id);
   } catch {
     return NextResponse.json({ success: false, error: { code: "DATABASE_ERROR", message: "Gagal menghapus" } }, { status: 500 });
   }
-  for (const p of PATHS[body.entity]) revalidatePath(p);
+  const paths = [...PATHS[body.entity]];
+  const slug = removed?.slug;
+  if (typeof slug === "string" && slug) {
+    paths.push(body.entity === "services" ? `/layanan/${slug}` : `/produk/${slug}`);
+  }
+  for (const p of paths) revalidatePath(p);
   return NextResponse.json({ success: true });
 }

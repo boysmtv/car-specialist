@@ -47,8 +47,10 @@ export async function addDemoItem(entity: "services" | "gallery" | "products", i
   await fs.writeFile(FILE, JSON.stringify(s));
 }
 
-export async function deleteDemoItem(entity: "services" | "gallery" | "products", id: string): Promise<void> {
+export async function deleteDemoItem(entity: "services" | "gallery" | "products", id: string): Promise<Record<string, unknown> | null> {
   const s = await readStore();
+  const removed = (s[entity] as Record<string, unknown>[]).find((x) => (x as { id?: string }).id === id) ?? null;
   s[entity] = s[entity].filter((x) => (x as { id?: string }).id !== id);
   await fs.writeFile(FILE, JSON.stringify(s));
+  return removed;
 }
