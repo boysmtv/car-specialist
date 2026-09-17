@@ -1,12 +1,13 @@
 import { createBrowserClient } from "@supabase/ssr";
+import { isSupabaseEnvPresent, supabaseAnonKey, supabaseUrl } from "./env";
 
 export function createClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = supabaseUrl();
+  const anon = supabaseAnonKey();
   if (!url || !anon) return null;
   return createBrowserClient(url, anon);
 }
 
 export function isSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return isSupabaseEnvPresent();
 }

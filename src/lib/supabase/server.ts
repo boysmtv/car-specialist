@@ -1,9 +1,10 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { isSupabaseEnvPresent, supabaseAnonKey, supabaseUrl } from "./env";
 
 export function createServerSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = supabaseUrl();
+  const anon = supabaseAnonKey();
   if (!url || !anon) return null;
   const store = cookies();
   return createServerClient(url, anon, {
@@ -26,5 +27,5 @@ export function createServerSupabase() {
 }
 
 export function isServerSupabaseConfigured() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return isSupabaseEnvPresent();
 }
