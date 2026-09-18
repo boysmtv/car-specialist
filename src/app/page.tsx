@@ -71,9 +71,12 @@ export default async function HomePage() {
             <p className="mt-1 text-sm text-slate-500">Ceritakan kebutuhan mobilmu langsung via WhatsApp.</p>
           </div>
         ) : (
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {services.slice(0, 6).map((s) => <ServiceCard key={s.id} s={s} />)}
-          </div>
+          <>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {services.slice(0, 6).map((s) => <ServiceCard key={s.id} s={s} />)}
+            </div>
+            <Link href="/layanan" className="btn-outline mt-4 w-full sm:w-auto">Lihat semua layanan ({services.length})</Link>
+          </>
         )}
       </section>
 
