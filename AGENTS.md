@@ -33,12 +33,14 @@ maupun localStorage untuk konten (sesi login tetap di browser, itu wajar).
   double `..._SUPABASE_SUPABASE_*` dari integrasi Vercel).
 - Tulis admin: `src/lib/adminDb.ts` (CRUD + upload ke bucket `images`).
 - Baca publik: `src/lib/data.ts` (repository server). Kosong = tampil empty state.
-- Setiap mutasi admin memanggil `POST /api/revalidate` untuk list + detail (anti cache-404).
+- Halaman detail (`produk/[slug]`, `layanan/[slug]`) WAJIB `export const dynamic = "force-dynamic"`
+  dan TANPA `generateStaticParams` (lihat gotcha §7). List + homepage boleh ISR.
+- Setiap mutasi admin memanggil `POST /api/revalidate` untuk path list (detail selalu fresh, tidak perlu).
 
 ## 4. Struktur penting
 
-- `src/app/page.tsx` — homepage (hero, layanan, banner home-service, produk, galeri, lokasi, CTA)
-- `src/app/(publik)` — `layanan/`, `produk/`, `galeri/`, `konsultasi/` (form → WA, tanpa DB), `tentang/`, `kontak/`, `sitemap.ts`, `robots.ts`
+- `src/app/page.tsx` — homepage (hero, layanan + tombol "Lihat semua layanan", banner home-service, produk, galeri, lokasi, CTA)
+- `src/app/` — `layanan/`, `produk/` (+ `[slug]/` detail, force-dynamic), `galeri/`, `konsultasi/` (form → WA, tanpa DB), `tentang/`, `kontak/`, `sitemap.ts`, `robots.ts` (tanpa route group; JANGAN tulis `(publik)`)
 - `src/app/admin/` — `login/`, `dashboard/` (kartu + status DB), `products/`, `services/`, `gallery/`, `settings/`
 - `src/app/api/` — `health/` (diagnosa DB, publik), `revalidate/`
 - `src/lib/` — `data.ts` (repository server), `adminDb.ts` (CRUD browser + upload Storage), `supabase/*`, `maps.ts` (koordinat `-6.253777,107.140374`), `whatsapp.ts`, `auth.ts` (sesi token 30 menit), `utils.ts`
@@ -65,7 +67,12 @@ maupun localStorage untuk konten (sesi login tetap di browser, itu wajar).
 
 ## 7. Gotcha yang sudah kejadian (jangan ulangi)
 
-- Halaman dinamis + `revalidate`: 404 ikut ter-cache! Tiap tambah/hapus wajib revalidate path list DAN detail.
+- JANGAN pakai `generateStaticParams` di halaman yang query Supabase via `createServerSupabase()`
+  (`cookies()` dari `next/headers`): di Vercel bikin route detail 500 deterministik
+  (list 200, data bersih, komponen sehat — tetap 500; terbukti 18 Sep 2026 di
+  `/produk/[slug]` + `/layanan/[slug]`). Solusi: `export const dynamic = "force-dynamic"`,
+  tanpa `generateStaticParams`/`revalidate`. Bonus: edit admin langsung tampil, bebas cache-404.
+- Halaman LIST + `revalidate`: 404 ikut ter-cache! Tiap tambah/hapus wajib revalidate path list.
 - `next start` lama bisa tetap pegang port — kill by PID (`dist\bin\next`) sebelum start baru, lalu verifikasi BUILD_ID/konten.
 - Env `NEXT_PUBLIC_*` tertanam saat build → redeploy TANPA cache setelah ubah env.
 - Nama env integrasi Vercel bisa double (`...SUPABASE_SUPABASE_URL`) — sudah ditangani `supabase/env.ts`.
