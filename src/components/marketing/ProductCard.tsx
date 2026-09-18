@@ -4,7 +4,8 @@ import { availabilityColor, availabilityLabel, priceLabel } from "@/lib/utils";
 import { productWaMessage, waLink } from "@/lib/whatsapp";
 
 export default function ProductCard({ p, wa }: { p: Product; wa: string }) {
-  const cover = p.images.find((i) => i.is_cover) ?? p.images[0];
+  const images = Array.isArray(p.images) ? p.images : [];
+  const cover = images.find((i) => i.is_cover) ?? images[0];
   return (
     <div className="card-luxe overflow-hidden transition hover:-translate-y-1 hover:shadow-[0_16px_36px_-14px_rgba(16,24,40,0.3)]">
       <Link href={`/produk/${p.slug}`} className="block">

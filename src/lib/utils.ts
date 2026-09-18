@@ -16,16 +16,18 @@ export function slugify(text: string): string {
     .replace(/-+/g, "-");
 }
 
-export function formatRupiah(n?: number | null): string {
-  if (n === undefined || n === null) return "Hubungi kami";
-  return "Rp " + new Intl.NumberFormat("id-ID").format(n);
+export function formatRupiah(n?: number | string | null): string {
+  if (n === undefined || n === null || n === "") return "Hubungi kami";
+  const num = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(num)) return "Hubungi kami";
+  return "Rp " + new Intl.NumberFormat("id-ID").format(num);
 }
 
 export function priceLabel(p: {
   price_mode: string;
-  price?: number | null;
-  price_min?: number | null;
-  price_max?: number | null;
+  price?: number | string | null;
+  price_min?: number | string | null;
+  price_max?: number | string | null;
 }): string {
   switch (p.price_mode) {
     case "FIXED":

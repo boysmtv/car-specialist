@@ -5,6 +5,29 @@ import type { Category, Faq, GalleryItem, Product, Service, SiteSettings } from 
 // PRODUCTION: baca SELALU dari Supabase. Tanpa hasil = kosong.
 // Tidak ada lagi fallback mock/demo/file lokal.
 
+// Nilai jsonb array dari DB bisa datang sebagai array, string JSON, null,
+// atau bentuk lain (input manual / admin lama). Normalisasi agar selalu array.
+function toStringArray(v: unknown): string[] {
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
+  if (typeof v === "string") {
+    try {
+      const parsed: unknown = JSON.parse(v);
+      if (Array.isArray(parsed)) return parsed.filter((x): x is string => typeof x === "string");
+    } catch {
+      return v ? [v] : [];
+    }
+    return v ? [v] : [];
+  }
+  return [];
+}
+
+// Kolom numeric Postgres bisa datang sebagai string via PostgREST.
+// Koersi agar aman dipakai untuk sortir & format Rupiah.
+function toNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 async function trySupabase<T>(fn: (sb: NonNullable<ReturnType<typeof createServerSupabase>>) => Promise<T>, fallback: T): Promise<T> {
   try {
     const sb = createServerSupabase();
@@ -28,9 +51,9 @@ export async function getServices(): Promise<Service[]> {
     if (!data || data.length === 0) return [] as Service[];
     return (data as Service[]).map((s) => ({
       ...s,
-      symptoms: Array.isArray(s.symptoms) ? s.symptoms : [],
-      diagnostics: Array.isArray(s.diagnostics) ? s.diagnostics : [],
-      process: Array.isArray(s.process) ? s.process : [],
+      symptoms: toStringArray(s.symptoms),
+      diagnostics: toStringArray(s.diagnostics),
+      process: toStringArray(s.process),
     }));
   }, []);
   return base;
@@ -53,21 +76,43 @@ export interface ProductQuery {
 
 export async function getProducts(query: ProductQuery = {}): Promise<{ items: Product[]; total: number }> {
   const { q, category, brand, availability, sort = "newest", page = 1, perPage = 24 } = query;
-  // Coba Supabase bila configured
+  // Coba Supabase bila configured.
+  // Pakai LEFT join ke categories (tanpa !inner) agar produk tanpa kategori
+  // tetap tampil, bukan hilang / menyebabkan 404 misterius.
   const fromDb = await trySupabase<Product[] | null>(async (sb) => {
-    let req = sb.from("products").select("*, product_images(*), categories!inner(slug,name)");
+    let req = sb.from("products").select("*, product_images(*), categories(slug,name)");
     req = req.eq("active", true).is("deleted_at", null);
     const { data, error } = await req.limit(200);
     if (error || !data || data.length === 0) return null;
     return (data as unknown[]).map((r: unknown) => {
       const row = r as Record<string, unknown>;
       const cat = row.categories as { slug?: string; name?: string } | null;
-      const imgs = (row.product_images as Array<Record<string, unknown>> | undefined) ?? [];
+      const rawImgs = row.product_images as Array<Record<string, unknown>> | Record<string, unknown> | null | undefined;
+      const imgs = Array.isArray(rawImgs) ? rawImgs : rawImgs ? [rawImgs] : [];
+      // specifications jsonb bisa null / string / array dari input manual —
+      // normalisasi ke object atau null agar Object.entries di detail aman.
+      let specs: Record<string, string> | null = null;
+      const rawSpecs = row.specifications as unknown;
+      if (rawSpecs && typeof rawSpecs === "object" && !Array.isArray(rawSpecs)) {
+        specs = rawSpecs as Record<string, string>;
+      } else if (typeof rawSpecs === "string" && rawSpecs.trim()) {
+        try {
+          const parsed: unknown = JSON.parse(rawSpecs);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) specs = parsed as Record<string, string>;
+        } catch {
+          specs = null;
+        }
+      }
       return {
         ...(row as unknown as Record<string, unknown>),
-        category_slug: cat?.slug,
-        category_name: cat?.name,
+        category_slug: cat?.slug ?? null,
+        category_name: cat?.name ?? null,
         images: imgs.map((im) => ({ ...im })),
+        specifications: specs,
+        price: toNumberOrNull(row.price),
+        price_min: toNumberOrNull(row.price_min),
+        price_max: toNumberOrNull(row.price_max),
+        installation_price: toNumberOrNull(row.installation_price),
       } as unknown as Product;
     });
   }, null);
@@ -85,8 +130,8 @@ export async function getProducts(query: ProductQuery = {}): Promise<{ items: Pr
   if (availability) items = items.filter((x) => x.availability === availability);
 
   switch (sort) {
-    case "name-asc": items.sort((a, b) => a.name.localeCompare(b.name)); break;
-    case "name-desc": items.sort((a, b) => b.name.localeCompare(a.name)); break;
+    case "name-asc": items.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")); break;
+    case "name-desc": items.sort((a, b) => (b.name ?? "").localeCompare(a.name ?? "")); break;
     case "price-asc": items.sort((a, b) => (a.price ?? a.price_min ?? 0) - (b.price ?? b.price_min ?? 0)); break;
     case "price-desc": items.sort((a, b) => (b.price ?? b.price_min ?? 0) - (a.price ?? a.price_min ?? 0)); break;
     default: break;

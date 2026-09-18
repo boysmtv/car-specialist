@@ -62,7 +62,8 @@ export async function cloudListServices(): Promise<Service[]> {
   const sb = mustDb();
   const { data, error } = await sb.from("services").select("*").is("deleted_at", null).order("name");
   if (error) throw error;
-  return (data ?? []) as Service[];
+  const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  return ((data ?? []) as Service[]).map((s) => ({ ...s, symptoms: arr(s.symptoms), diagnostics: arr(s.diagnostics), process: arr(s.process) }));
 }
 
 export async function cloudSaveService(s: Service, isEdit: boolean): Promise<void> {

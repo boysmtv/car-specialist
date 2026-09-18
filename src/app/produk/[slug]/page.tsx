@@ -15,14 +15,20 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const p = await getProductBySlug(params.slug);
-  return { title: p ? p.name : "Produk", description: p?.short_description ?? undefined };
+  return { title: p?.name ?? "Produk", description: p?.short_description ?? undefined };
 }
 
 export default async function ProductDetail({ params }: { params: { slug: string } }) {
   const p = await getProductBySlug(params.slug);
   if (!p || !p.active) notFound();
   const [related, settings] = await Promise.all([getRelatedProducts(p), getSettings()]);
-  const cover = p.images.find((i) => i.is_cover) ?? p.images[0];
+  const images = Array.isArray(p.images) ? p.images : [];
+  const cover = images.find((i) => i.is_cover) ?? images[0];
+  const specs: Record<string, string> | null =
+    p.specifications && typeof p.specifications === "object" && !Array.isArray(p.specifications)
+      ? (p.specifications as Record<string, string>)
+      : null;
+  const specEntries = specs ? Object.entries(specs).filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== "") : [];
   return (
     <div className="container-x py-10">
       <nav className="text-xs text-slate-500"><Link href="/" className="hover:text-primary">Home</Link> / <Link href="/produk" className="hover:text-primary">Produk</Link> / {p.name}</nav>
@@ -31,7 +37,7 @@ export default async function ProductDetail({ params }: { params: { slug: string
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {cover && <img src={cover.url} alt={cover.alt_text || p.name} className="aspect-square w-full rounded-xl border border-border object-cover" />}
           <div className="mt-2 grid grid-cols-4 gap-2">
-            {p.images.slice(0, 4).map((im) => (
+            {images.slice(0, 4).map((im) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={im.id} src={im.url} alt={im.alt_text || p.name} loading="lazy" className="aspect-square w-full rounded-lg border border-border object-cover" />
             ))}
@@ -43,10 +49,10 @@ export default async function ProductDetail({ params }: { params: { slug: string
           <p className="mt-1 text-sm text-slate-500">{p.brand} · {p.category_name} {p.part_number ? `· ${p.part_number}` : ""}</p>
           <p className="mt-3 text-2xl font-extrabold text-primary">{priceLabel(p)}</p>
           <p className="mt-3 text-sm text-slate-600">{p.description}</p>
-          {p.specifications && (
+          {specEntries.length > 0 && (
             <dl className="card mt-3 grid gap-1 p-4 text-sm">
-              {Object.entries(p.specifications).map(([k, v]) => (
-                <div key={k} className="flex justify-between gap-3 border-b border-slate-100 py-1 last:border-0"><dt className="text-slate-500">{k}</dt><dd className="font-medium">{v}</dd></div>
+              {specEntries.map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-3 border-b border-slate-100 py-1 last:border-0"><dt className="text-slate-500">{k}</dt><dd className="font-medium">{String(v)}</dd></div>
               ))}
             </dl>
           )}

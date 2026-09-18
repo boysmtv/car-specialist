@@ -55,11 +55,12 @@ export default function ServicesAdmin() {
   }
 
   function startEdit(s: Service) {
+    const arr = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
     setForm({
       editId: s.id, editSlug: s.slug, name: s.name, icon: s.icon || "wrench",
       short: s.short_description, desc: s.description,
-      symptoms: s.symptoms.join("\n"), diagnostics: s.diagnostics.join("\n"),
-      process: s.process.join("\n"), duration: s.duration_text || "",
+      symptoms: arr(s.symptoms).join("\n"), diagnostics: arr(s.diagnostics).join("\n"),
+      process: arr(s.process).join("\n"), duration: s.duration_text || "",
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -173,7 +174,7 @@ export default function ServicesAdmin() {
                 </div>
               </div>
               <p className="mt-1 line-clamp-2 text-xs text-slate-500">{s.short_description}</p>
-              <p className="mt-1 text-[11px] text-slate-400">{s.symptoms.length} gejala · {s.diagnostics.length} pemeriksaan · {s.process.length} tahap proses</p>
+              <p className="mt-1 text-[11px] text-slate-400">{(Array.isArray(s.symptoms) ? s.symptoms.length : 0)} gejala · {(Array.isArray(s.diagnostics) ? s.diagnostics.length : 0)} pemeriksaan · {(Array.isArray(s.process) ? s.process.length : 0)} tahap proses</p>
             </div>
           ))}
         </div>
