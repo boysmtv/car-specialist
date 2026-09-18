@@ -9,5 +9,6 @@ demo-data.json
 
 .agent_memory/
 .ai-agent/
+.playwright-mcp/
 
 tsconfig.tsbuildinfo

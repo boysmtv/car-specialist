@@ -1,17 +1,15 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getProductBySlug, getProducts, getRelatedProducts, getSettings } from "@/lib/data";
+import { getProductBySlug, getRelatedProducts, getSettings } from "@/lib/data";
 import { availabilityColor, availabilityLabel, priceLabel } from "@/lib/utils";
 import ProductCard from "@/components/marketing/ProductCard";
 import { productWaMessage, waLink } from "@/lib/whatsapp";
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const { items } = await getProducts({ perPage: 200 });
-  return items.map((x) => ({ slug: x.slug }));
-}
+// Selalu render saat request (jangan ISR/prerender): generateStaticParams +
+// cookies() di generateStaticParams bikin route detail 500 di Vercel.
+// Dinamis = data admin selalu fresh + bebas dari cache-404.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const p = await getProductBySlug(params.slug);
