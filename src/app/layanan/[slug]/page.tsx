@@ -1,15 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getServiceBySlug, getServices, getSettings } from "@/lib/data";
+import { getServiceBySlug, getSettings } from "@/lib/data";
 import { waLink } from "@/lib/whatsapp";
 
-export const revalidate = 300;
-
-export async function generateStaticParams() {
-  const s = await getServices();
-  return s.map((x) => ({ slug: x.slug }));
-}
+// Selalu render saat request (jangan ISR/prerender): generateStaticParams +
+// cookies() di generateStaticParams bikin route detail 500 di Vercel.
+// Dinamis = data admin selalu fresh + bebas dari cache-404.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const s = await getServiceBySlug(params.slug);
